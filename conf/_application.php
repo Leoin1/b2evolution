@@ -84,6 +84,7 @@ $modules = array(
 		'sessions',
 		'messaging',
 		'maintenance',
+		// 'dbase',
 		// 'central_antispam',		// will also require $enable_blacklist_server_API = true;
 	);
 ?>
