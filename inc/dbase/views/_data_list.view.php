@@ -12,7 +12,7 @@ $SQL = new SQL();
 $SQL->SELECT( $current_DbTable->meta_prefix.'fieldname, '.$current_DbTable->meta_prefix.'label' );
 $SQL->FROM( $current_DbTable->meta_table_name );
 $SQL->WHERE( $current_DbTable->meta_prefix.'column_number IS NOT NULL' );
-$SQL->ORDER_BY( $current_DbTable->meta_prefix.'column_number DESC' );
+$SQL->ORDER_BY( $current_DbTable->meta_prefix.'column_number ASC' );
 
 $field_name = $current_DbTable->meta_prefix.'fieldname';
 $label_name = $current_DbTable->meta_prefix.'label';

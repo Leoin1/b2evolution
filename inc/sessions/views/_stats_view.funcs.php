@@ -266,7 +266,7 @@ function filter_hits( & $Form )
  *
  * @param integer Blog ID
  * @param string Requested URI
- * @param integer Output string lenght
+ * @param integer Output string length
  * @param string Display
  * @param string Controller
  * @return string

@@ -21,10 +21,10 @@ class StringType extends Type
 	 * @param label
 	 * @param maximum length
 	 */
-	function StringType( $name, $label, $max_length )
+	function __construct( $name, $label, $max_length )
 	{
-		// Call parrent constructor
-		parent::Type( $name, $label );
+		// Call parent constructor
+		parent::__construct( $name, $label );
 
 		$this->max_length = $max_length;
 	}

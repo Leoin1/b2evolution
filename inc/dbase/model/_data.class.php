@@ -76,7 +76,7 @@ class Data extends DataObject
 		{
 				$var_name = $ColumnMeta->get_db_name();
 
-				$this->values[$var_name] = param_check_db_value( $var_name, $ColumnMeta->Type, $ColumnMeta->lenght, $ColumnMeta->is_unsigned(), $ColumnMeta->is_required() );
+				$this->values[$var_name] = param_check_db_value( $var_name, $ColumnMeta->Type, $ColumnMeta->length, $ColumnMeta->is_unsigned(), $ColumnMeta->is_required() );
 		}
 
 		return !param_errors_detected();

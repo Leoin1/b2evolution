@@ -13,10 +13,10 @@ class DateTimeType extends Type
 	 * @param name
 	 * @param label
 	 */
-	function DateTimeType( $name, $label )
+	function __construct( $name, $label )
 	{
-		// Call parrent constructor
-		parent::Type( $name, $label );
+		// Call parent constructor
+		parent::__construct( $name, $label );
 	}
 
 

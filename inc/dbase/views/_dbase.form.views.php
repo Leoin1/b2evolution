@@ -38,7 +38,7 @@ function dbase_form( &$Data, &$ColumnMeta, &$TableMeta, &$Form, $label, $action 
  */
 function dbase_form_tinyint( &$Data, &$ColumnMeta, &$TableMeta, &$Form, $label, $action )
 {
-	$maxlength = $ColumnMeta->lenght;
+	$maxlength = $ColumnMeta->length;
 	if( !$ColumnMeta->is_unsigned() )
 	{
 		$maxlength++;
@@ -134,7 +134,7 @@ function dbase_form_bigint( &$Data, &$ColumnMeta, &$TableMeta, &$Form, $label, $
  */
 function dbase_form_char( &$Data, &$ColumnMeta, &$TableMeta, &$Form, $label, $action )
 {
-	$Form->text_input( $ColumnMeta->get_db_name(), get_value( $Data, $ColumnMeta ), 50, $label, $TableMeta->create_type( $ColumnMeta, false ), array( 'maxlength' => $ColumnMeta->lenght, 'required' => $ColumnMeta->is_required() ) );
+	$Form->text_input( $ColumnMeta->get_db_name(), get_value( $Data, $ColumnMeta ), 50, $label, $TableMeta->create_type( $ColumnMeta, false ), array( 'maxlength' => $ColumnMeta->length, 'required' => $ColumnMeta->is_required() ) );
 }
 
 
@@ -177,7 +177,7 @@ function dbase_form_text( &$Data, &$ColumnMeta, &$TableMeta, &$Form, $label, $ac
  * @param field label
  * @param action
  */
-function dbase_form_date( &$Data, &$ColumnMeta, &$TableMeta, &$Form, $label, $action )
+function dbase_form_time( &$Data, &$ColumnMeta, &$TableMeta, &$Form, $label, $action )
 {
 	$Form->text_input( $ColumnMeta->get_db_name(), get_value( $Data, $ColumnMeta ), 10, $label, '(hh:mm:ss)', array( 'maxlength' => 8, 'required' => $ColumnMeta->is_required() ) );
 }
@@ -192,7 +192,7 @@ function dbase_form_date( &$Data, &$ColumnMeta, &$TableMeta, &$Form, $label, $ac
  * @param field label
  * @param action
  */
-function dbase_form_time( &$Data, &$ColumnMeta, &$TableMeta, &$Form, $label, $action )
+function dbase_form_date( &$Data, &$ColumnMeta, &$TableMeta, &$Form, $label, $action )
 {
 	$Form->text_input( $ColumnMeta->get_db_name(), get_value( $Data, $ColumnMeta ), 8, $label, '(yyyy-mm-dd)', array( 'maxlength' => 10, 'required' => $ColumnMeta->is_required() ) );
 }
@@ -248,7 +248,7 @@ function dbase_form_email( &$Data, &$ColumnMeta, &$TableMeta, &$Form, $label, $a
 		$note = $TableMeta->create_type( $ColumnMeta, false );
 	}
 
-	$Form->text_input( $ColumnMeta->get_db_name(), get_value( $Data, $ColumnMeta ), 50, $label, $note, array( 'maxlength' => $ColumnMeta->lenght, 'required' => $ColumnMeta->is_required() ) );
+	$Form->text_input( $ColumnMeta->get_db_name(), get_value( $Data, $ColumnMeta ), 50, $label, $note, array( 'maxlength' => $ColumnMeta->length, 'required' => $ColumnMeta->is_required() ) );
 }
 
 
@@ -287,7 +287,7 @@ function dbase_form_url( &$Data, &$ColumnMeta, &$TableMeta, &$Form, $label, $act
 		$note = $TableMeta->create_type( $ColumnMeta, false );
 	}
 
-	$Form->text_input( $ColumnMeta->get_db_name(), get_value( $Data, $ColumnMeta ), 50, $label, $note, array( 'maxlength' => $ColumnMeta->lenght, 'required' => $ColumnMeta->is_required() ) );
+	$Form->text_input( $ColumnMeta->get_db_name(), get_value( $Data, $ColumnMeta ), 50, $label, $note, array( 'maxlength' => $ColumnMeta->length, 'required' => $ColumnMeta->is_required() ) );
 }
 
 

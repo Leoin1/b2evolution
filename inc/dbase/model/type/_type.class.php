@@ -27,7 +27,7 @@ class Type
 	 * @param name
 	 * @param label
 	 */
-	function Type( $name, $label )
+	function __construct( $name, $label )
 	{
 		$this->name = $name;
 		$this->label = $label;

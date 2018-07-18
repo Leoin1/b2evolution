@@ -19,7 +19,7 @@ class ColumnMeta
 	 * Field Length
 	 * @var integer
 	 */
-	var $lenght;
+	var $length;
 
 	/**
 	 * Signed / Unsigned
@@ -146,7 +146,7 @@ class ColumnMeta
 			// Set length
 			if( array_key_exists( 'length', $meta_data ) )
 			{
-				$this->lenght = $meta_data['length'];
+				$this->length = $meta_data['length'];
 			}
 
 			// Set unsigned or signed
@@ -177,7 +177,7 @@ class ColumnMeta
 		else
 		{
 			$this->Type = & $dbase_types['varchar'];;
-			$this->lenght = 50;
+			$this->length = 50;
 			$this->unsigned = 1;
 			$this->null = 1;
 
@@ -231,7 +231,7 @@ class ColumnMeta
 		// Column Length
 		if( $this->Type->is_variable() )
 		{
-			$this->lenght = param( $current_DbTable->meta_prefix.'length', 'string' );
+			$this->length = param( $current_DbTable->meta_prefix.'length', 'string' );
 			$this->param_check_type_length( $current_DbTable->meta_prefix.'length' );
 		}
 
@@ -241,7 +241,7 @@ class ColumnMeta
 		// Column Default
 		if( $this->Type->is_default() )
 		{
-			$this->default = param_check_db_value( $current_DbTable->meta_prefix.'default', $this->Type, $this->lenght, $this->is_unsigned(), false );
+			$this->default = param_check_db_value( $current_DbTable->meta_prefix.'default', $this->Type, $this->length, $this->is_unsigned(), false );
 		}
 
 		// Specific params
@@ -292,7 +292,7 @@ class ColumnMeta
 		if( param_check_number( $var_name, T_('Length must be integer.' ), true ) )
 		{
 			$max_length = $this->get_max_length();
-			if( $max_length != NULL && ( $this->lenght < 1 || $this->lenght > $max_length ))
+			if( $max_length != NULL && ( $this->length < 1 || $this->length > $max_length ))
 			{
 				param_error( $var_name, T_( 'The ').$this->Type->name.T_( ' length must be between 1 and ' ).$max_length.T_( '.' ) );
 			}
@@ -341,9 +341,9 @@ class ColumnMeta
 			return NULL;
 		}
 
-		if( !empty( $this->lenght ) )
+		if( !empty( $this->length ) )
 		{
-			return $this->lenght;
+			return $this->length;
 		}
 		else
 		{
@@ -367,11 +367,11 @@ class ColumnMeta
 		{
 			if( $this->is_unsigned() )
 			{
-				return $this->Type->unsigned_lenght;
+				return $this->Type->unsigned_length;
 			}
 			else
 			{
-				return $this->Type->signed_lenght;
+				return $this->Type->signed_length;
 			}
 		}
 		else

@@ -88,9 +88,9 @@ switch( $action )
 		{
 			// Insert in DB:
 			$DB->begin();
-			$q = $edited_Data->dbexists();
+			$q = $edited_Data->dbexists( NULL, NULL );
 
-			if($q)
+			if( $q )
 			{	// We have a duplicate entry:
 
 				param_error( $current_DbTable->prefix.'name',
@@ -104,7 +104,7 @@ switch( $action )
 			}
 			$DB->commit();
 
-			if( empty($q) )
+			if( empty( $q ) )
 			{	// What next?
 				switch( $action )
 				{
@@ -157,7 +157,7 @@ switch( $action )
 
 		if( param( 'confirm', 'integer', 0 ) )
 		{ // confirmed, Delete from DB:
-			$msg = sprintf( T_('Data &laquo;%s&raquo; deleted.'), $edited_Data->dget('name') );
+			$msg = sprintf( T_('Data &laquo;%s&raquo; deleted.'), $edited_Data->dget( 'name' ) );
 			$edited_Data->dbdelete();
 			unset( $edited_Data );
 			forget_param( 'db_ID' );
@@ -168,7 +168,7 @@ switch( $action )
 		}
 		else
 		{	// not confirmed, Check for restrictions:
-			if( ! $edited_Data->check_delete( sprintf( T_('Cannot delete entry &laquo;%s&raquo;'), $edited_Data->dget('name') ) ) )
+			if( ! $edited_Data->check_delete( sprintf( T_('Cannot delete entry &laquo;%s&raquo;'), $edited_Data->dget( 'name' ) ) ) )
 			{	// There are restrictions:
 				$action = 'view';
 			}

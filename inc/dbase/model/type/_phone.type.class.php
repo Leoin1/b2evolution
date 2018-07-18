@@ -14,10 +14,10 @@ class PhoneType extends StringType
 	 * @param name
 	 * @param label
 	 */
-	function PhoneType( $name, $label )
+	function __construct( $name, $label )
 	{
-		// Call parrent constructor
-		parent::StringType( $name, $label, 255 );
+		// Call parent constructor
+		parent::__construct( $name, $label, 255 );
 	}
 
 

@@ -75,7 +75,7 @@ function & get_DbTableCache()
 
 	if( ! isset( $DbTableCache ) )
 	{	// Cache doesn't exist yet:
-		$DbTableCache = new DataObjectCache( 'DbTable', true, 'T_dbase__table', 'dbt_', 'dbt_ID', 'dbt_name', 'dbt_order DESC' );
+		$DbTableCache = new DataObjectCache( 'DbTable', true, 'T_dbase__table', 'dbt_', 'dbt_ID', 'dbt_name', 'dbt_order ASC' );
 	}
 
 	return $DbTableCache;

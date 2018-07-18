@@ -10,10 +10,10 @@ class TimestampType extends DateTimeType
 	 * @param name
 	 * @param label
 	 */
-	function TimestampType( $name, $label )
+	function __construct( $name, $label )
 	{
-		// Call parrent constructor
-		parent::DateTimeType( $name, $label );
+		// Call parent constructor
+		parent::__construct( $name, $label );
 	}
 }
 

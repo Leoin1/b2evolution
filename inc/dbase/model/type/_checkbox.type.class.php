@@ -17,10 +17,10 @@ class CheckboxType extends NumericType
 	 * @param maximum value for signed numeric type
 	 * @param minimum value for signed numeric type
 	 */
-	function CheckboxType( $name, $label, $unsigned_lenght = 3, $signed_lenght = 3, $min_unsigned = 0, $max_unsigned = 255, $min_signed = -128, $max_signed = 127 )
+	function __construct( $name, $label, $unsigned_length = 3, $signed_length = 3, $min_unsigned = 0, $max_unsigned = 255, $min_signed = -128, $max_signed = 127 )
 	{
-		// Call parrent constructor
-		parent::NumericType( $name, $label, $unsigned_lenght, $signed_lenght, $min_unsigned, $max_unsigned, $min_signed, $max_signed );
+		// Call parent constructor
+		parent::__construct( $name, $label, $unsigned_length, $signed_length, $min_unsigned, $max_unsigned, $min_signed, $max_signed );
 	}
 
 

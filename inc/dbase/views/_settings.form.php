@@ -19,11 +19,11 @@ $Form->global_icon( T_( 'Cancel editing!' ), 'close', regenerate_url( 'action' )
 
 if( $creating )
 {
-	$Form->begin_form( 'fform', T_( 'New field' ) );
+	$Form->begin_form( 'fform', T_( 'New field' ), array( 'onReset' => 'onFormReset();' ) );
 }
 else
 {
-	$Form->begin_form( 'fform', T_( 'Edit field' ) );
+	$Form->begin_form( 'fform', T_( 'Edit field' ), array( 'onReset' => 'onFormReset();' ) );
 }
 
 $Form->hiddens_by_key( get_memorized( 'action'.( $creating ? ','.$current_DbTable->meta_prefix.'name' : '' ) ) );
@@ -54,6 +54,7 @@ $Form->text_input( $current_DbTable->meta_prefix.'form_order', $ColumnMeta->form
 
 $Form->end_fieldset();
 
+// Display other fieldset
 $Form->begin_fieldset( T_( 'Type' ), array( 'class'=>'fieldset clear' ) );
 
 $types_option = array();
@@ -71,7 +72,7 @@ $types_option = Form::get_select_options_string($types_option, $ColumnMeta->Type
 
 $Form->select_input_options( $current_DbTable->meta_prefix.'type', $types_option, T_( 'Type' ), T_( 'Select field type' ), $field_params = array( 'allow_none' => false, 'required' => true, 'onChange' => 'onDbaseTypeChange()' ) );
 
-$Form->text_input( $current_DbTable->meta_prefix.'length', $ColumnMeta->lenght, 3, T_( 'Length' ), T_( 'Lenght of numeric, char and varchar types' ), array( 'maxlength'=> 3 ) );
+$Form->text_input( $current_DbTable->meta_prefix.'length', $ColumnMeta->length, 3, T_( 'Length' ), T_( 'Length of numeric, char and varchar types' ), array( 'maxlength'=> 3 ) );
 
 $Form->text_input( $current_DbTable->meta_prefix.'default', $ColumnMeta->default, 20, T_( 'Default value' ), '', array( 'maxlength'=> 20 ) );
 
@@ -101,92 +102,208 @@ $Form->checkbox( $current_DbTable->meta_prefix.'null', $ColumnMeta->null, T_( 'N
 	fields[5] = 'ffield_'+ prefix + 'default_country';
 	fields[6] = 'ffield_'+ prefix + 'null';
 
-	onDbaseTypeChange();
+	onDbaseTypeChange( true );
 
 	// Listener on type change
-	function onDbaseTypeChange()
+	function onDbaseTypeChange( ignoreDefaults )
 	{
 		var type = document.getElementById( prefix + 'type' );
 
 		changeFildsVisibility( [ 0, 1, 2, 3, 4, 5, 6 ], 'none' );
-		setDefailtValue( '' );
+		if( ! ignoreDefaults )
+		{
+			setDefailtValue( '' );
+		}
 
 		switch( type.value )
 		{
 			// Numeric fields
 			case 'tinyint':
-				showNumericFields( 3, 1, 1 );
+				if( ignoreDefaults )
+				{
+					showNumericFields();
+				}
+				else
+				{
+					showNumericFields( 3, 1, 1 );
+				}
 				break;
 			case 'smallint':
-				showNumericFields( 5, 1, 1 );
+				if( ignoreDefaults )
+				{
+					showNumericFields();
+				}
+				else
+				{
+					showNumericFields( 5, 1, 1 );
+				}
 				break;
 			case 'mediumint':
-				showNumericFields( 8, 1, 1 );
+			if( ignoreDefaults )
+				{
+					showNumericFields();
+				}
+				else
+				{
+					showNumericFields( 8, 1, 1 );
+				}
 				break;
 			case 'int':
-				showNumericFields( 10, 2, 2 );
+				if( ignoreDefaults )
+				{
+					showNumericFields();
+				}
+				else
+				{
+					showNumericFields( 10, 2, 2 );
+				}
 				break;
 			case 'bigint':
-				showNumericFields( 20, 2, 2 );
+				if( ignoreDefaults )
+				{
+					showNumericFields();
+				}
+				else
+				{
+					showNumericFields( 20, 2, 2 );
+				}
 				break;
 			// String fields
 			case 'char':
-				showStringFields( 3, 3, 3 );
+				if( ignoreDefaults )
+				{
+					showStringFields();
+				}
+				else
+				{
+					showStringFields( 3, 3, 3 );
+				}
 				break;
 			case 'varchar':
-				showStringFields( 40, 3, 3 );
+				if( ignoreDefaults )
+				{
+					showStringFields();
+				}
+				else
+				{
+					showStringFields( 40, 3, 3 );
+				}
 				break;
 			case 'email':
-				showStringFields( 50, 3, 3 );
+			if( ignoreDefaults )
+				{
+					showStringFields();
+				}
+				else
+				{
+					showStringFields( 50, 3, 3 );
+				}
 				break;
 			case 'phone':
-				showStringFields( 30, 3, 3 );
+				if( ignoreDefaults )
+				{
+					showStringFields();
+				}
+				else
+				{
+					showStringFields( 30, 3, 3 );
+				}
 				break;
 			case 'url':
-				showStringFields( 255, 3, 3 );
+			if( ignoreDefaults )
+				{
+					showStringFields();
+				}
+				else
+				{
+					showStringFields( 255, 3, 3 );
+				}
 				break;
 			case 'word':
-				showStringFields( 20, 3, 3 );
+				if( ignoreDefaults )
+				{
+					showStringFields();
+				}
+				else
+				{
+					showStringFields( 20, 3, 3 );
+				}
 				break;
 			// Date/Time fields
 			case 'date':
-				showDatetimeFields( 10 )
+				if( ignoreDefaults )
+				{
+					showDatetimeFields();
+				}
+				else
+				{
+					showDatetimeFields( 10 );
+				}
 				break;
 			case 'time':
-				showDatetimeFields( 8 )
+			if( ignoreDefaults )
+				{
+					showDatetimeFields();
+				}
+				else
+				{
+					showDatetimeFields( 8 );
+				}
 				break;
 			case 'datetime':
 			case 'timestamp':
-				showDatetimeFields( 19 );
+				if( ignoreDefaults )
+				{
+					showDatetimeFields();
+				}
+				else
+				{
+					showDatetimeFields( 19 );
+				}
 				break;
 			// File fields
 			case 'file':
 				changeFildsVisibility( [ 6 ], 'block' );
-				setTypeLength( 10, 2, 2);
-				setUnsigned( true );
+				if( ! ignoreDefaults )
+				{
+					setTypeLength( 10, 2, 2);
+					setUnsigned( true );
+				}
 				break;
 			// Image field
 			case 'image':
 				changeFildsVisibility( [ 0, 3, 6 ] , 'block' );
-				setTypeLength( 255, 3, 3);
+				if( ! ignoreDefaults )
+				{
+					setTypeLength( 255, 3, 3);
+				}
 				break;
 			// Country field
 			case 'country':
 				changeFildsVisibility( [ 5, 6 ], 'block' );
-				setTypeLength( 2, 3, 3 );
+				if( ! ignoreDefaults )
+				{
+					setTypeLength( 2, 3, 3 );
+				}
 				break;
 			// Foreign Key field
 			case 'foreign':
 				changeFildsVisibility( [ 4, 6 ], 'block' );
-				setTypeLength( 10, 2, 2 );
-				setUnsigned( true );
+				if( ! ignoreDefaults )
+				{
+					setTypeLength( 10, 2, 2 );
+					setUnsigned( true );
+				}
 				break;
 			// Checkbox field
 			case 'checkbox':
-				setTypeLength( 1, 1, 1 );
-				setUnsigned( true );
-				setNull( true );
-				setDefailtValue( 0 );
+				if( ! ignoreDefaults )
+				{
+					setTypeLength( 1, 1, 1 );
+					setUnsigned( true );
+					setNull( true );
+					setDefailtValue( 0 );
+				}
 				break;
 			// Default fields
 			case 'text':
@@ -195,6 +312,13 @@ $Form->checkbox( $current_DbTable->meta_prefix.'null', $ColumnMeta->null, T_( 'N
 				// Without fields
 				break;
 		}
+	}
+
+	function onFormReset()
+	{
+		setTimeout( function() {
+				onDbaseTypeChange( true );
+			}, 1 );
 	}
 
 	// Show numeric fields
@@ -249,9 +373,9 @@ $Form->checkbox( $current_DbTable->meta_prefix.'null', $ColumnMeta->null, T_( 'N
 	function setTypeLength( value, size, maxlength )
 	{
 		var field = document.getElementById( prefix + 'length' );
-		field.setAttribute('value', value );
-		field.setAttribute('size', size);
-		field.setAttribute('maxlength', maxlength);
+		if( typeof( value ) != 'undefined' ) field.setAttribute('value', value );
+		if( typeof( size ) != 'undefined' ) field.setAttribute('size', size);
+		if( typeof( maxlength ) != 'undefined' ) field.setAttribute('maxlength', maxlength);
 	}
 
 	// Set defailt field maxlength
@@ -259,7 +383,7 @@ $Form->checkbox( $current_DbTable->meta_prefix.'null', $ColumnMeta->null, T_( 'N
 	function setDefailtLength( maxlength )
 	{
 		var field = document.getElementById( prefix + 'default' );
-		field.setAttribute('maxlength', maxlength);
+		if( typeof( maxlength ) != 'undefined' ) field.setAttribute('maxlength', maxlength);
 	}
 
 	// Set defailt value
@@ -267,7 +391,7 @@ $Form->checkbox( $current_DbTable->meta_prefix.'null', $ColumnMeta->null, T_( 'N
 	function setDefailtValue( value )
 	{
 		var field = document.getElementById( prefix + 'default' );
-		field.setAttribute('value', value );
+		if( typeof( value ) != 'undefined' ) field.setAttribute('value', value );
 	}
 
 	// Set unsigned/signed field value
@@ -275,7 +399,7 @@ $Form->checkbox( $current_DbTable->meta_prefix.'null', $ColumnMeta->null, T_( 'N
 	function setUnsigned( value )
 	{
 		var field = document.getElementById( prefix + 'unsigned' );
-		field.checked = value;
+		if( typeof( value ) != 'undefined' ) field.checked = value;
 	}
 
 	// Set null field value
@@ -283,7 +407,7 @@ $Form->checkbox( $current_DbTable->meta_prefix.'null', $ColumnMeta->null, T_( 'N
 	function setNull( value )
 	{
 		var field = document.getElementById( prefix + 'null' );
-		field.checked = value;
+		if( typeof( value ) != 'undefined' ) field.checked = value;
 	}
 
 	-->

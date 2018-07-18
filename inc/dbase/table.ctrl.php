@@ -70,7 +70,7 @@ switch( $action )
 
 			// Insert in DB:
 			$DB->begin();
-			$q = $edited_DbTable->dbexists();
+			$q = $edited_DbTable->dbexists( NULL, NULL );
 			if( $q )
 			{	// We have a duplicate entry:
 				param_error( 'dbt_table', T_( 'This table already exists' ) );
@@ -114,7 +114,7 @@ switch( $action )
 
 			// Update in DB:
 			$DB->begin();
-			$q = $edited_DbTable->dbexists();
+			$q = $edited_DbTable->dbexists( NULL, NULL );
 			if( $q )
 			{	// We have a duplicate entry:
 				param_error( 'dbt_table', T_( 'This table already exists' ) );

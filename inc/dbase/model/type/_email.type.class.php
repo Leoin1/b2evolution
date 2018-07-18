@@ -14,10 +14,10 @@ class EmailType extends StringType
 	 * @param name
 	 * @param label
 	 */
-	function EmailType( $name, $label )
+	function __construct( $name, $label )
 	{
-		// Call parrent constructor
-		parent::StringType( $name, $label, 255 );
+		// Call parent constructor
+		parent::__construct( $name, $label, 255 );
 	}
 
 

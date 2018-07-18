@@ -14,7 +14,7 @@ class NumericType extends Type
 	 */
 	var $min_unsigned;
 	var $max_unsigned;
-	var $unsigned_lenght;
+	var $unsigned_length;
 
 	/**
 	 * Maximum and minimum values for signed numeric type
@@ -22,7 +22,7 @@ class NumericType extends Type
 	 */
 	var $min_signed;
 	var $max_signed;
-	var $signed_lenght;
+	var $signed_length;
 
 
 	/**
@@ -36,13 +36,13 @@ class NumericType extends Type
 	 * @param maximum value for signed numeric type
 	 * @param minimum value for signed numeric type
 	 */
-	function NumericType( $name, $label, $unsigned_lenght, $signed_lenght, $min_unsigned, $max_unsigned, $min_signed, $max_signed )
+	function __construct( $name, $label, $unsigned_length, $signed_length, $min_unsigned, $max_unsigned, $min_signed, $max_signed )
 	{
-		// Call parrent constructor
-		parent::Type( $name, $label );
+		// Call parent constructor
+		parent::__construct( $name, $label );
 
-		$this->unsigned_lenght = $unsigned_lenght;
-		$this->signed_lenght = $signed_lenght;
+		$this->unsigned_length = $unsigned_length;
+		$this->signed_length = $signed_length;
 
 		$this->min_unsigned = $min_unsigned;
 		$this->max_unsigned = $max_unsigned;

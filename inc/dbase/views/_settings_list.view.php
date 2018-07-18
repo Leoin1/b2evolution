@@ -154,7 +154,7 @@ if( count( $TableMeta->ColumnMetas ) > 0 )
 
 		if( $Type->is_variable() )
 		{
-			echo ' ('.$ColumnMeta->lenght.')';
+			echo ' ('.$ColumnMeta->length.')';
 		}
 
 		if( $Type->is_signed() && $ColumnMeta->is_unsigned() )

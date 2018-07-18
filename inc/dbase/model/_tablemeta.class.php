@@ -190,7 +190,7 @@ class TableMeta extends Table
 		// Column type length
 		if( $Type->is_variable() )
 		{
-			$strtype .= '('.$ColumnMeta->lenght.')';
+			$strtype .= '('.$ColumnMeta->length.')';
 		}
 
 		// Column type unsigned or signed
@@ -374,7 +374,7 @@ class TableMeta extends Table
 	function set_col_sort_values()
 	{
 		$this->current_order = param( 'orderby', 'integer', 6 );
-		$this->current_togle = param( 'order', 'string', 'DESC' );
+		$this->current_togle = param( 'order', 'string', 'ASC' );
 	}
 
 
@@ -429,9 +429,28 @@ class TableMeta extends Table
 	 */
 	function osort( &$oarray, $field, $dir )
 	{
-    	usort( $oarray, create_function( '$a,$b', 'if ( $a->'.$field.' == $b->'
-    		.$field.' ) return 0; if( \'ASC\' == \''.$dir.'\' ) { return ( $a->'.$field.' < $b->'
-    		.$field.' ) ? -1 : 1; } else { return ( $a->'.$field.' > $b->'.$field.' ) ? -1 : 1; }' ) );
+		if( version_compare( PHP_VERSION, '7.2', '>=' ) )
+		{
+			$callback = function( $a, $b ) use ( $field, $dir )
+				{
+					if( $a->$field == $b->$field ) return 0;
+					if( 'ASC' == $dir )
+					{
+						return ( $a->$field < $b->$field ) ? -1 : 1;
+					}
+					else
+					{
+						return ( $a->$field > $b->$field ) ? -1 : 1;
+					}
+				};
+			usort( $oarray, $callback );
+		}
+		else
+		{
+			usort( $oarray, create_function( '$a,$b', 'if ( $a->'.$field.' == $b->'
+				.$field.' ) return 0; if( \'ASC\' == \''.$dir.'\' ) { return ( $a->'.$field.' < $b->'
+				.$field.' ) ? -1 : 1; } else { return ( $a->'.$field.' > $b->'.$field.' ) ? -1 : 1; }' ) );
+		}
 	}
 
 
