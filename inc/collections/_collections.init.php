@@ -1110,16 +1110,15 @@ class collections_Module extends Module
 			case 'subs_update':
 				// Subscribe/Unsubscribe user on the selected collection
 
-				if( $demo_mode && ( $current_User->ID <= 3 ) )
-				{ // don't allow default users profile change on demo mode
-					bad_request_die( 'Demo mode: you can\'t edit the admin and demo users profile!<br />[<a href="javascript:history.go(-1)">'
-								. T_('Back to profile') . '</a>]' );
-				}
-
 				// Get params
 				$blog = param( 'subscribe_blog', 'integer', true );
 				$notify_items = param( 'sub_items', 'integer', NULL );
 				$notify_comments = param( 'sub_comments', 'integer', NULL );
+
+				if( $demo_mode && ( $current_User->ID <= 7 ) )
+				{	// Don't allow default users profile change on demo mode:
+					header_redirect( get_user_settings_url( 'subs', NULL, $blog, '&' ) );
+				}
 
 				if( ( $notify_items < 0 ) || ( $notify_items > 1 ) || ( $notify_comments < 0 ) || ( $notify_comments > 1 ) )
 				{ // Invalid notify param. It should be 0 for unsubscribe and 1 for subscribe.
@@ -1168,15 +1167,16 @@ class collections_Module extends Module
 			case 'isubs_update':
 				// Subscribe/Unsubscribe user on the selected item
 
-				if( $demo_mode && ( $current_User->ID <= 3 ) )
-				{ // don't allow default users profile change on demo mode
-					bad_request_die( 'Demo mode: you can\'t edit the admin and demo users profile!<br />[<a href="javascript:history.go(-1)">'
-								. T_('Back to profile') . '</a>]' );
-				}
-
 				// Get params
 				$item_ID = param( 'p', 'integer', true );
 				$notify = param( 'notify', 'integer', 0 );
+
+				if( $demo_mode && ( $current_User->ID <= 7 ) )
+				{	// Don't allow default users profile change on demo mode:
+					$ItemCache = & get_ItemCache();
+					$Item = & $ItemCache->get_by_ID( $item_ID );
+					header_redirect( get_user_settings_url( 'subs', NULL, $Item->get_blog_ID(), '&' ) );
+				}
 
 				if( ( $notify < 0 ) || ( $notify > 1 ) )
 				{ // Invalid notify param. It should be 0 for unsubscribe and 1 for subscribe.
@@ -1244,19 +1244,19 @@ class collections_Module extends Module
 				{	// Unsubscribe from newsletter:
 					if( $current_User->unsubscribe( $Newsletter->ID ) )
 					{
-						$Messages->add( T_('You have successfully unsubscribed.'), 'success' );
+						$Messages->add( sprintf( T_('You have unsubscribed and you will no longer receive emails from %s.'), '"'.$Newsletter->get( 'name' ).'"' ), 'success' );
 					}
 				}
 				else
 				{	// Subscribe to newsletter:
-					if( $current_User->subscribe( $Newsletter->ID ) )
+					if( $current_User->is_subscribed( $Newsletter->ID ) || $current_User->subscribe( $Newsletter->ID ) )
 					{
 						if( ! empty( $insert_user_tags ) )
 						{
 							$current_User->add_usertags( $insert_user_tags );
 							$current_User->dbupdate();
 						}
-						$Messages->add( T_('You have successfully subscribed.'), 'success' );
+						$Messages->add( sprintf( T_('You have successfully subscribed to: %s.'), '"'.$Newsletter->get( 'name' ).'"' ), 'success' );
 					}
 				}
 
@@ -1278,15 +1278,19 @@ class collections_Module extends Module
 					// EXIT HERE.
 				}
 
+				// What post and comment date fields use to refresh:
+				// - 'touched' - 'post_datemodified', 'comment_last_touched_ts' (Default)
+				// - 'created' - 'post_datestart', 'comment_date'
+				$date_type = param( 'type', 'string', 'touched' );
+
 				// Run refreshing and display a message:
-				$refreshed_Item->refresh_contents_last_updated_ts();
-				$Messages->add( T_('"Contents last updated" timestamp has been refreshed.'), 'success' );
+				$refreshed_Item->refresh_contents_last_updated_ts( true, $date_type );
 
 				header_redirect();
 				break; // already exited here
 
 			case 'create_post':
-				// Create new post from front-office:
+				// Create new post from front-office by anonymous user:
 				global $dummy_fields, $Plugins;
 
 				load_class( 'items/model/_item.class.php', 'Item' );
@@ -1297,7 +1301,6 @@ class collections_Module extends Module
 
 				// Email:
 				$user_email = param( $dummy_fields['email'], 'string' );
-				param_check_email( $dummy_fields['email'], true );
 
 				// Stop a request from the blocked IP addresses or Domains
 				antispam_block_request();
@@ -1314,17 +1317,17 @@ class collections_Module extends Module
 				$item_Blog = & $new_Item->get_Blog();
 
 				// Set default status:
-				$new_Item->set( 'status', $item_Blog->get_setting( 'default_post_status' ) );
+				$new_Item->set( 'status', $item_Blog->get_setting( 'default_post_status_anon' ) );
 
-				if( $DB->get_var( 'SELECT user_ID FROM T_users WHERE user_email = '.$DB->quote( utf8_strtolower( $user_email ) ) ) )
-				{	// Don't allow the duplicate emails for users:
-					$Messages->add_to_group( sprintf( T_('You already registered on this site. You can <a %s>log in here</a>. If you don\'t know or have forgotten it, you can <a %s>set your password here</a>.'),
-						'href="'.$item_Blog->get( 'loginurl' ).'"',
-						'href="'.$item_Blog->get( 'lostpasswordurl' ).'"' ), 'error', T_('Validation errors:') );
-				}
+				// Check email:
+				param_check_new_user_email( $dummy_fields['email'], $user_email, $item_Blog );
 
 				// Set item properties from submitted form:
 				$new_Item->load_from_Request( false, true );
+
+				// Use default item/post type of the collection:
+				$default_item_type_ID = $item_Blog->get_setting( 'default_post_type' );
+				$new_Item->set( 'ityp_ID', ( empty( $default_item_type_ID ) ? 1 /* Post */ : $default_item_type_ID ) );
 
 				// Call plugin event for additional checking, e-g captcha:
 				$Plugins->trigger_event( 'AdminBeforeItemEditCreate', array( 'Item' => & $new_Item ) );
@@ -1346,11 +1349,11 @@ class collections_Module extends Module
 				// START: Auto register new user:
 				// Set unique user login from entered user name:
 				$max_login_length = 20;
-				$login = preg_replace( '/[^a-z0-9 ]/i', '', $user_name );
+				$login = preg_replace( '/[^a-z0-9_\-\. ]/i', '', $user_name );
 				if( trim( $login ) == '' )
 				{	// Get login from entered user email:
 					$login = preg_replace( '/^([^@]+)@.+$/i', '$1', $user_email );
-					$login = preg_replace( '/[^a-z0-9 ]/i', '', $login );
+					$login = preg_replace( '/[^a-z0-9_\-\. ]/i', '', $login );
 				}
 				$login = str_replace( ' ', '_', $login );
 				$login = utf8_substr( $login, 0, $max_login_length );
@@ -1399,7 +1402,7 @@ class collections_Module extends Module
 				if( $new_Item->dbinsert() )
 				{	// Successful new item creating:
 					$Messages->add( T_('Post has been created.'), 'success' );
-					$Messages->add( T_('Please set a password now so you can log in to this site next time you visit.'), 'error' );
+					$Messages->add( T_('Please double check your email address and choose a password so that you can log in next time you visit us.'), 'warning' );
 					$redirect_to = $item_Blog->get( 'register_finishurl', array( 'glue' => '&' ) );
 				}
 				else
@@ -1413,6 +1416,40 @@ class collections_Module extends Module
 
 				header_redirect( $redirect_to );
 				break;
+
+			case 'update_tags':
+				// Update item tags:
+				$item_ID = param( 'item_ID', 'integer', true );
+				$item_tags = param( 'item_tags', 'string', true );
+
+				$ItemCache = & get_ItemCache();
+				$edited_Item = & $ItemCache->get_by_ID( $item_ID );
+
+				// Check perms:
+				$current_User->check_perm( 'item_post!CURSTATUS', 'edit', true, $edited_Item );
+
+				if( empty( $item_tags ) && $edited_Item->get_type_setting( 'use_tags' ) == 'required' )
+				{	// Tags must be entered:
+					param_check_not_empty( 'item_tags', T_('Please provide at least one tag.') );
+				}
+
+				if( ! param_errors_detected() )
+				{	// Update tags only when no errors:
+					$edited_Item->set_tags_from_string( $item_tags );
+					if( $edited_Item->dbupdate() )
+					{
+						$Messages->add( T_('Post has been updated.'), 'success' );
+					}
+				}
+
+				if( isset( $_POST['actionArray']['update_tags'] ) )
+				{	// Use a default redirect to referer page when it has been submitted as normal form:
+					break;
+				}
+				else
+				{	// Exit here when AJAX request, so we don't need a redirect after this function:
+					exit(0);
+				}
 		}
 	}
 }

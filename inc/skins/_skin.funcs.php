@@ -78,6 +78,14 @@ function skin_init( $disp )
 
 	$Debuglog->add('skin_init: $disp='.$disp, 'skins' );
 
+	if( in_array( $disp, array( 'threads', 'messages', 'contacts', 'msgform', 'user', 'profile', 'avatar', 'pwdchange', 'userprefs', 'subs', 'register_finish', 'visits', 'closeaccount' ) ) &&
+	    $msg_Blog = & get_setting_Blog( 'msg_blog_ID' ) &&
+	    $Blog->ID != $msg_Blog->ID )
+	{	// Redirect to collection which should be used for profile/messaging pages:
+		header_redirect( $msg_Blog->get( $disp.'url', array( 'glue' => '&' ) ) );
+		// Exit here.
+	}
+
 	// This is the main template; it may be used to display very different things.
 	// Do inits depending on current $disp:
 	switch( $disp )
@@ -1045,6 +1053,13 @@ function skin_init( $disp )
 		case 'access_requires_login':
 			global $login_mode;
 
+			if( is_logged_in() )
+			{	// Don't display this page for already logged in user:
+				global $Blog;
+				header_redirect( $Blog->get( 'url' ) );
+				// Exit here.
+			}
+
 			if( $Settings->get( 'http_auth_require' ) && ! isset( $_SERVER['PHP_AUTH_USER'] ) )
 			{	// Require HTTP authentication:
 				header( 'WWW-Authenticate: Basic realm="b2evolution"' );
@@ -1115,9 +1130,24 @@ function skin_init( $disp )
 			$seo_page_type = 'Register form';
 			$robots_index = false;
 
-			// Check invitation code if it exists and registration is enabled
-			global $display_invitation;
-			$display_invitation = check_invitation_code();
+			$comment_ID = param( 'comment_ID', 'integer', 0 );
+			if( $comment_ID > 0 )
+			{	// Suggestion to register for anonymous user:
+				$CommentCache = & get_CommentCache();
+				$Comment = & $CommentCache->get_by_ID( $comment_ID, false, false );
+				if( $Comment && $Comment->get( 'author_email' ) !== '' )
+				{	// If comment is really from anonymous user:
+					// Display info message:
+					$Messages->add( T_('In order to manage all the comments you posted, please create a user account with the same email address.'), 'note' );
+					// Prefill the registration form with data from anonymous comment:
+					global $dummy_fields;
+					set_param( $dummy_fields['email'], $Comment->get( 'author_email' ) );
+					set_param( $dummy_fields['login'], $Comment->get( 'author' ) );
+					set_param( 'firstname', $Comment->get( 'author' ) );
+					$comment_Item = & $Comment->get_Item();
+					set_param( 'locale', $comment_Item->get( 'locale' ) );
+				}
+			}
 			break;
 
 		case 'lostpassword':
@@ -1208,6 +1238,14 @@ function skin_init( $disp )
 
 			// Display messages depending on user email status
 			display_user_email_status_message();
+
+			global $current_User, $demo_mode;
+			if( $demo_mode && ( $current_User->ID <= 7 ) )
+			{	// Demo mode restrictions: users created by install process cannot be edited:
+				$Messages->add( T_('You cannot edit the admin and demo users profile in demo mode!'), 'error' );
+				// Set action to 'view' in order to switch all form input elements to read mode:
+				set_param( 'action', 'view' );
+			}
 			break;
 
 		case 'users':
@@ -1468,15 +1506,21 @@ function skin_init( $disp )
 			break;
 
 		case 'closeaccount':
-			global $current_User;
-			if( ! $Settings->get( 'account_close_enabled' ) ||
-			    ( is_logged_in() && $current_User->check_perm( 'users', 'edit', false ) ) ||
-			    ( ! is_logged_in() && ! $Session->get( 'account_closing_success' ) ) )
-			{ // If an account closing page is disabled - Display 404 page with error message
-			  // Don't allow admins close own accounts from front office
-			  // Don't display this message for not logged in users, except of one case to display a bye message after account closing
-				global $disp;
-				$disp = '404';
+			global $current_User, $disp;
+			if( ! $Settings->get( 'account_close_enabled' ) )
+			{	// If an account closing page is disabled - Display 404 page with error message:
+				$disp = is_logged_in() ? 'profile' : 'login';
+				$Messages->add( T_('The account closing feature is disabled.'), 'error' );
+			}
+			elseif( ! is_logged_in() && ! $Session->get( 'account_closing_success' ) )
+			{	// Don't display this message for not logged in users, except of one case to display a bye message after account closing:
+				$disp = 'login';
+				$Messages->add( T_('You must log in before you can close your account.'), 'error' );
+			}
+			elseif( is_logged_in() && $current_User->check_perm( 'users', 'edit', false ) )
+			{	// Don't allow admins close own accounts from front office:
+				$disp = 'profile';
+				$Messages->add( T_('You have user moderation privileges. In order to prevent mistakes, you cannot close your own account. Please ask the admin (or another admin) to remove your user moderation privileges before closing your account.'), 'error' );
 			}
 			elseif( $Session->get( 'account_close_reason' ) )
 			{
@@ -1502,6 +1546,21 @@ function skin_init( $disp )
 			if( $Blog->get_setting( $disp.'_noindex' ) )
 			{	// We prefer robots not to index these pages:
 				$robots_index = false;
+			}
+			break;
+
+		case 'compare':
+			$items = trim( param( 'items', '/^[\d,]*$/' ), ',' );
+			if( ! empty( $items ) )
+			{	// Check if at least one item exist in DB:
+				$ItemCache = & get_ItemCache();
+				$items = $ItemCache->load_list( explode( ',', $items ) );
+			}
+			if( empty( $items ) )
+			{	// Display 404 page when no items to compare:
+				global $disp;
+				$disp = '404';
+				$Messages->add( T_('The requested items don\'t exist.'), 'error' );
 			}
 			break;
 	}
@@ -1735,6 +1794,7 @@ function skin_include( $template_name, $params = array() )
 				'disp_useritems'             => '_useritems.disp.php',
 				'disp_usercomments'          => '_usercomments.disp.php',
 				'disp_users'                 => '_users.disp.php',
+				'disp_compare'               => '_compare.disp.php',
 			);
 
 		// Add plugin disp handlers:

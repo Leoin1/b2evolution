@@ -743,7 +743,7 @@ class Skin extends DataObject
 					if( ! empty( $disp_params['function_url'] ) )
 					{
 						echo '<a href="'.$disp_params['function_url'].'" target="_blank" title="'.T_('Preview blog with this skin in a new window').'">';
-						echo T_('Preview').'</a>';
+						echo /* TRANS: Verb */ T_('Preview').'</a>';
 					}
 					break;
 			}
@@ -1119,6 +1119,8 @@ class Skin extends DataObject
 					// Used to add new search field "Specific criteria":
 					require_js( '#jqueryUI#', 'blog' );
 					require_css( '#jqueryUI_css#', 'blog' );
+					// Load jQuery QueryBuilder plugin files for user list filters:
+					init_querybuilder_js( 'blog' );
 
 					// Require results.css to display thread query results in a table:
 					if( ! in_array( 'bootstrap', $features ) )
@@ -1197,6 +1199,11 @@ class Skin extends DataObject
 					// Include this file to expand/collapse the filters panel when JavaScript is disabled
 					global $inc_path;
 					require_once $inc_path.'_filters.inc.php';
+					break;
+
+				case 'disp_search':
+					// Used to suggest usernames for the field "Recipients":
+					init_tokeninput_js( 'blog' );
 					break;
 
 				case 'disp_login':
@@ -1582,6 +1589,7 @@ var downloadInterval = setInterval( function()
 							'customstart'    => '<div class="custom_content">',
 							'customend'      => "</div>\n",
 							'note_format'    => ' <span class="help-inline">%s</span>',
+							'bottom_note_format' => ' <div><span class="help-inline">%s</span></div>',
 							// Additional params depending on field type:
 							// - checkbox
 							'fieldstart_checkbox'    => '<div class="form-group form-group-sm checkbox" $ID$>'."\n",
@@ -1628,6 +1636,7 @@ var downloadInterval = setInterval( function()
 							'customstart'    => '<div class="custom_content">',
 							'customend'      => "</div>\n",
 							'note_format'    => ' <span class="help-inline">%s</span>',
+							'bottom_note_format' => ' <div><span class="help-inline">%s</span></div>',
 							// Additional params depending on field type:
 							// - checkbox
 							'inputclass_checkbox'    => '',
@@ -1673,6 +1682,7 @@ var downloadInterval = setInterval( function()
 							'customstart'    => '<div class="custom_content">',
 							'customend'      => "</div>\n",
 							'note_format'    => ' <span class="help-inline">%s</span>',
+							'bottom_note_format' => ' <div><span class="help-inline">%s</span></div>',
 							// Additional params depending on field type:
 							// - checkbox
 							'inputclass_checkbox'    => '',
@@ -1722,6 +1732,7 @@ var downloadInterval = setInterval( function()
 							'customstart'    => '<div class="custom_content">',
 							'customend'      => "</div>\n",
 							'note_format'    => ' <span class="help-inline">%s</span>',
+							'bottom_note_format' => ' <div><span class="help-inline">%s</span></div>',
 							// Additional params depending on field type:
 							// - checkbox
 							'inputclass_checkbox'    => '',
@@ -1739,6 +1750,21 @@ var downloadInterval = setInterval( function()
 							'radio_oneline_start'    => '<label class="radio-inline">',
 							'radio_oneline_end'      => "</label>\n",
 						);
+
+					case 'fields_table_form':
+						return array_merge( $this->get_template( 'Form' ), array(
+								'fieldset_begin' => '<div class="evo_fields_table $class$" id="fieldset_wrapper_$id$" $fieldset_attribs$>'."\n",
+								'fieldset_end'   => '</div>'."\n",
+								'fieldstart'     => '<div class="evo_fields_table__field" $ID$>'."\n",
+								'fieldend'       => "</div>\n\n",
+								'labelclass'     => 'evo_fields_table__label',
+								'labelstart'     => '',
+								'labelend'       => "\n",
+								'labelempty'     => '',
+								'inputstart'     => '<div class="evo_fields_table__input">',
+								'inputend'       => "</div>\n",
+							) );
+						break;
 
 					case 'user_navigation':
 						// The Prev/Next links of users (Used on disp=user to navigate between users):
@@ -1921,6 +1947,7 @@ var downloadInterval = setInterval( function()
 					'customstart' => '',
 					'customend' => "\n",
 					'note_format' => ' <span class="notes">%s</span>',
+					'bottom_note_format' => ' <div><span class="notes">%s</span></div>',
 					'formend' => '',
 				);
 

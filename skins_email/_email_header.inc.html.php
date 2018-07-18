@@ -58,40 +58,10 @@ else
 <?php } ?>
 
 <div class="email_payload"<?php echo emailskin_style( 'div.email_payload' ); ?>>
+<div style="max-width: 700px; margin: 1ex auto;">
 <?php
 if( $params['include_greeting'] )
 { // Display the greeting message
-	if( !empty( $params['newsletter'] ) )
-	{	// This is a newsletter
-		if( ! empty( $recipient_User ) )
-		{
-			echo '<p'.emailskin_style( '.p' ).'>'.T_('Hello $firstname_and_login$!').'</p>';
-		}
-		elseif( ! empty( $params['anonymous_recipient_name'] ) )
-		{
-			echo '<p'.emailskin_style( '.p' ).'>'.T_('Hello $name$!').'</p>';
-		}
-		else
-		{
-			echo '<p'.emailskin_style( '.p' ).'>'.T_('Hello').'!</p>';
-		}
-
-		echo '<p'.emailskin_style( '.p' ).'>'.T_('Here are some news').'...</p>';
-	}
-	else
-	{
-		if( ! empty( $recipient_User ) )
-		{
-			echo '<p'.emailskin_style( '.p' ).'>'.T_('Hello $name$!').'</p>';
-		}
-		elseif( ! empty( $params['anonymous_recipient_name'] ) )
-		{
-			echo '<p'.emailskin_style( '.p' ).'>'.T_('Hello $username$!').'</p>';
-		}
-		else
-		{
-			echo '<p'.emailskin_style( '.p' ).'>'.T_('Hello').'!</p>';
-		}
-	}
-}
 ?>
+<p<?php echo emailskin_style( '.p' ); ?>><?php echo sprintf( T_( 'Hello %s!' ), empty( $params['recipient_User'] ) ? '$name$' :'$username$' ); ?></p>
+<?php } ?>

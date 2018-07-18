@@ -44,13 +44,16 @@ switch ( $action )
 		param( 'enable_email', 'integer', 0 );
 		param( 'notify_messages', 'integer', 0 );
 		param( 'notify_unread_messages', 'integer', 0 );
+		param( 'notify_comment_mentioned', 'integer', 0 );
 		param( 'notify_published_comments', 'integer', 0 );
 		param( 'notify_comment_moderation', 'integer', 0 );
 		param( 'notify_edit_cmt_moderation', 'integer', 0 );
 		param( 'notify_spam_cmt_moderation', 'integer', 0 );
 		param( 'notify_meta_comments', 'integer', 0 );
+		param( 'notify_post_mentioned', 'integer', 0 );
 		param( 'notify_post_moderation', 'integer', 0 );
 		param( 'notify_edit_pst_moderation', 'integer', 0 );
+		param( 'notify_post_assignment', 'integer', 0 );
 		param( 'def_newsletters', 'array:integer', array() );
 		param_integer_range( 'notification_email_limit', 0, 999, T_('Notificaiton email limit must be between %d and %d.') );
 		param_integer_range( 'newsletter_limit', 0, 999, T_('List limit must be between %d and %d.') );
@@ -95,6 +98,7 @@ switch ( $action )
 		param( 'js_passwd_hashing', 'integer', 0 );
 		param( 'passwd_special', 'integer', 0 );
 		param( 'strict_logins', 'integer', 0 );
+		param( 'registration_after_quick', 'string', '' );
 		param( 'registration_require_country', 'integer', 0 );
 		param( 'registration_require_firstname', 'integer', 0 );
 		param( 'registration_ask_locale', 'integer', 0 );
@@ -130,13 +134,16 @@ switch ( $action )
 					 array( 'def_enable_email', $enable_email ),
 					 array( 'def_notify_messages', $notify_messages ),
 					 array( 'def_notify_unread_messages', $notify_unread_messages ),
+					 array( 'def_notify_comment_mentioned', $notify_comment_mentioned ),
 					 array( 'def_notify_published_comments', $notify_published_comments ),
 					 array( 'def_notify_comment_moderation', $notify_comment_moderation ),
 					 array( 'def_notify_edit_cmt_moderation', $notify_edit_cmt_moderation ),
 					 array( 'def_notify_spam_cmt_moderation', $notify_spam_cmt_moderation ),
 					 array( 'def_notify_meta_comments', $notify_meta_comments ),
+					 array( 'def_notify_post_mentioned', $notify_post_mentioned ),
 					 array( 'def_notify_post_moderation', $notify_post_moderation ),
 					 array( 'def_notify_edit_pst_moderation', $notify_edit_pst_moderation ),
+					 array( 'def_notify_post_assignment', $notify_post_assignment ),
 					 array( 'def_newsletters', implode( ',', $def_newsletters ) ),
 					 array( 'def_notification_email_limit', $notification_email_limit ),
 					 array( 'def_newsletter_limit', $newsletter_limit ),
@@ -155,6 +162,7 @@ switch ( $action )
 					 array( 'http_auth_accept', $http_auth_accept ),
 					 array( 'passwd_special', $passwd_special ),
 					 array( 'strict_logins', $strict_logins ),
+					 array( 'registration_after_quick', $registration_after_quick ),
 					 array( 'registration_require_country', $registration_require_country ),
 					 array( 'registration_require_firstname', $registration_require_firstname ),
 					 array( 'registration_ask_locale', $registration_ask_locale ),

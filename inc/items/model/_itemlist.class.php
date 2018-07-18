@@ -97,7 +97,7 @@ class ItemList2 extends ItemListLight
 		$Item->status = param( 'post_status', 'string', NULL ); // 'published' or 'draft' or ...
 		// We know we can use at least one status,
 		// but we need to make sure the requested/default one is ok:
-		$Item->status = $Blog->get_allowed_item_status( $Item->status );
+		$Item->status = $Blog->get_allowed_item_status( $Item->status, $Item );
 
 		// Check if new category was started to create. If yes then set up parameters for next page:
 		check_categories_nosave( $post_category, $post_extracats, $Item );
@@ -799,7 +799,7 @@ class ItemList2 extends ItemListLight
 						// asimo> If we would like to order the null values into the end of the result, then we must check the current direction
 						// asimo> In that case NULL values should be allowed only if the direction is 'NEXT' no matter what is the current $operator value
 
-						$custom_field_value = $current_Item->get_custom_field_value( $compare_field_name );
+						$custom_field_value = $current_Item->get_custom_field_value( $compare_field_name, false, false );
 						if( ( $custom_field_value === false ) || ( $custom_field_value === NULL ) )
 						{ // This custom field is not set for the current Item
 							$where_condition .= ( $operator == ' > ' ? $compare_field.' IS NOT NULL' : 'FALSE' );

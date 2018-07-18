@@ -422,6 +422,9 @@ switch( $action )
 	case 'create_comments_post':
 		// Create new post from selected comments:
 
+		// Check that this action request is not a CSRF hacked request:
+		$Session->assert_received_crumb( 'comments' );
+
 		$item_ID = param( 'p', 'integer', 0 );
 		$selected_comments = param( 'selected_comments', 'array:integer' );
 
@@ -538,14 +541,26 @@ switch( $action )
 	case 'set_visibility':
 		// Set visibility of selected comments:
 
+		// Check that this action request is not a CSRF hacked request:
+		$Session->assert_received_crumb( 'comments' );
+
 		$item_ID = param( 'p', 'integer', 0 );
 		$selected_comments = param( 'selected_comments', 'array:integer' );
+
+		if( $item_ID > 0 )
+		{	// Set an URL to redirect to item view details page after this action:
+			$redirect_to = $admin_url.'?ctrl=items&blog='.$blog.'&p='.$item_ID.'&comment_type=feedback#comments';
+		}
+		else
+		{	// Set an URL to redirect to comments list after this action:
+			$redirect_to = $admin_url.'?ctrl=comments&blog='.$blog;
+		}
 
 		if( empty( $selected_comments ) )
 		{	// If no comments selected:
 			$Messages->add( T_('Please select at least one comment.'), 'error' );
 			// REDIRECT / EXIT:
-			header_redirect( $admin_url.'?ctrl=items&blog='.$blog.'&p='.$item_ID.'&comment_type=feedback#comments' );
+			header_redirect( $redirect_to );
 		}
 
 		$comment_status = param( 'comment_status', 'string' );
@@ -582,7 +597,93 @@ switch( $action )
 		}
 
 		// REDIRECT / EXIT:
-		header_redirect( $admin_url.'?ctrl=items&blog='.$blog.'&p='.$item_ID.'&comment_type=feedback#comments' );
+		header_redirect( $redirect_to );
+		break;
+
+	case 'recycle_comments':
+	case 'delete_comments':
+		// Recycle/Delete the selected comments:
+
+		// Check that this action request is not a CSRF hacked request:
+		$Session->assert_received_crumb( 'comments' );
+
+		$item_ID = param( 'p', 'integer', 0 );
+		$selected_comments = param( 'selected_comments', 'array:integer' );
+
+		if( $item_ID > 0 )
+		{	// Set an URL to redirect to item view details page after this action:
+			$redirect_to = $admin_url.'?ctrl=items&blog='.$blog.'&p='.$item_ID.'&comment_type=feedback#comments';
+		}
+		else
+		{	// Set an URL to redirect to comments list after this action:
+			$redirect_to = $admin_url.'?ctrl=comments&blog='.$blog;
+		}
+
+		if( empty( $selected_comments ) )
+		{	// If no comments selected:
+			$Messages->add( T_('Please select at least one comment.'), 'error' );
+			// REDIRECT / EXIT:
+			header_redirect( $redirect_to );
+		}
+
+		// Force a permanent deletion for given action even if comments were not recycled:
+		$force_permanent_delete = ( $action == 'delete_comments' );
+
+		$CommentCache = & get_CommentCache();
+		$comments_success_recycled = 0;
+		$comments_success_deleted = 0;
+		$comments_failed_recycled = 0;
+		$comments_failed_deleted = 0;
+		foreach( $selected_comments as $selected_comment_ID )
+		{
+			$comment_status = false;
+			if( ( $selected_Comment = & $CommentCache->get_by_ID( $selected_comment_ID, false, false ) ) &&
+			    $current_User->check_perm( 'comment!CURSTATUS', 'delete', false, $selected_Comment ) )
+			{	// If current User has a permission to recycle/delete the selected Comment:
+				$comment_status = $selected_Comment->get( 'status' );
+				if( $selected_Comment->dbdelete( $force_permanent_delete ) )
+				{
+					if( $force_permanent_delete || $comment_status == 'trash' )
+					{	// If a selected comment has been deleted completely:
+						$comments_success_deleted++;
+					}
+					else
+					{	// If a selected comment has been moved to recycle bin:
+						$comments_success_recycled++;
+					}
+					continue;
+				}
+			}
+			// Wrong comment or current User has no perm to delete the selected comment:
+			if( $force_permanent_delete || $comment_status == 'trash' )
+			{	// If a selected comment has NOT been deleted completely:
+				$comments_failed_deleted++;
+			}
+			else
+			{	// If a selected comment has NOT been moved to recycle bin:
+				$comments_failed_recycled++;
+			}
+		}
+
+		if( $comments_success_recycled )
+		{	// Inform about success recycling:
+			$Messages->add( sprintf( T_('%d comments have been recycled.'), $comments_success_recycled ), 'success' );
+		}
+		if( $comments_success_deleted )
+		{	// Inform about success deleted:
+			$Messages->add( sprintf( T_('%d comments have been deleted.'), $comments_success_deleted ), 'success' );
+		}
+		if( $comments_failed_recycled )
+		{	// Inform about failed deletions:
+			$Messages->add( sprintf( T_('%d comments could not be recycled.'), $comments_failed_recycled ), 'error' );
+		}
+		if( $comments_failed_deleted )
+		{	// Inform about failed deletions:
+			$Messages->add( sprintf( T_('%d comments could not be deleted.'), $comments_failed_deleted ), 'error' );
+		}
+
+		// REDIRECT / EXIT:
+		header_redirect( $redirect_to );
 		break;
 
 	default:
@@ -636,6 +737,9 @@ switch( $action )
 		if( empty( $edited_Item ) )
 		{ // Create new Item object
 			$edited_Item = new Item();
+			// Prefill data from url:
+			$edited_Item->set( 'title', param( 'post_title', 'string' ) );
+			$edited_Item->set( 'urltitle', param( 'post_urltitle', 'string' ) );
 		}
 
 		$edited_Item->set('main_cat_ID', $Blog->get_default_cat_ID());
@@ -651,11 +755,10 @@ switch( $action )
 		$edited_Item->set_creator_location( 'subregion' );
 		$edited_Item->set_creator_location( 'city' );
 
-		$def_status = get_highest_publish_status( 'post', $Blog->ID, false );
-		$edited_Item->status = param( 'post_status', 'string', $def_status );		// 'published' or 'draft' or ...
+		$edited_Item->status = param( 'post_status', 'string', $Blog->get_setting( 'default_post_status' ) );		// 'published' or 'draft' or ...
 		// We know we can use at least one status,
 		// but we need to make sure the requested/default one is ok:
-		$edited_Item->status = $Blog->get_allowed_item_status( $edited_Item->status );
+		$edited_Item->status = $Blog->get_allowed_item_status( $edited_Item->status, $edited_Item );
 
 		// Check if new category was started to create. If yes then set up parameters for next page:
 		check_categories_nosave( $post_category, $post_extracats, $edited_Item, ( $action == 'new_switchtab' ? 'frontoffice' : 'backoffice' ) );
@@ -760,7 +863,7 @@ switch( $action )
 		$edited_Item->status = param( 'post_status', 'string', NULL );		// 'published' or 'draft' or ...
 		// We know we can use at least one status,
 		// but we need to make sure the requested/default one is ok:
-		$edited_Item->status = $Blog->get_allowed_item_status( $edited_Item->status );
+		$edited_Item->status = $Blog->get_allowed_item_status( $edited_Item->status, $edited_Item );
 
 		// We use the request variables to fill the edit form, because we need to be able to pass those values
 		// from tab to tab via javascript when the editor wants to switch views...
@@ -1382,8 +1485,10 @@ switch( $action )
 			$edited_Item->handle_notifications();
 
 			// Set redirect back to items list with new item type tab:
-			$tab = get_tab_by_item_type_usage( $edited_Item->get_type_setting( 'usage' ) );
-			$redirect_to = $admin_url.'?ctrl=items&blog='.$Blog->ID.'&tab=type&tab_type='.( $tab ? $tab[0] : 'post' ).'&filter=restore';
+			$tab = param( 'tab', 'string', 'type' );
+			$tab_type = get_tab_by_item_type_usage( $edited_Item->get_type_setting( 'usage' ) );
+			$tab_type_param = ( $tab == 'type' ? '&tab_type='.( $tab_type ? $tab_type[0] : 'post' ) : '' );
+			$redirect_to = $admin_url.'?ctrl=items&blog='.$Blog->ID.'&tab='.$tab.$tab_type_param.'&filter=restore';
 
 			// Highlight the updated item in list
 			$Session->set( 'highlight_id', $edited_Item->ID );
@@ -1650,7 +1755,7 @@ switch( $action )
 		$ItemCache = & get_ItemCache();
 		if( ! ( $dest_Item = & $ItemCache->get_by_ID( $dest_post_ID, false, false ) ) )
 		{	// If Item doesn't exist in DB:
-			$Messages->add( T_('Wrong selected item for merging, please try again.'), 'error' );
+			$Messages->add( 'Item to merge does not exist any more.', 'error' );
 			// REDIRECT / EXIT
 			header_redirect();
 		}
@@ -1782,6 +1887,8 @@ function init_list_mode()
 
 	// Set different filterset name for each different tab and tab_type
 	$filterset_name = ( $tab == 'type' ) ? $tab.'_'.utf8_strtolower( $tab_type ) : $tab;
+	// Append collection ID to filterset in order to keep filters separately per collection:
+	$filterset_name .= $Blog->ID;
 
 	// Create empty List:
 	$ItemList = new ItemList2( $Blog, NULL, NULL, $UserSettings->get('results_per_page'), 'ItemCache', $items_list_param_prefix, $filterset_name /* filterset name */ ); // COPY (func)
@@ -1974,7 +2081,7 @@ switch( $action )
 				$AdminUI->global_icon( T_('In-skin editing'), 'edit', $mode_inskin_url,
 						' '.T_('In-skin editing'), 4, 3, array(
 						'style' => 'margin-right: 3ex',
-						'onclick' => 'return b2edit_reload( document.getElementById(\'item_checkchanges\'), \''.$mode_inskin_action.'\' );'
+						'onclick' => 'return b2edit_reload( \'#item_checkchanges\', \''.$mode_inskin_action.'\' );'
 				) );
 			}
 
@@ -2088,7 +2195,7 @@ if( !empty( $Blog ) )
 }
 */
 
-if( $action == 'view' || strpos( $action, 'edit' ) !== false || strpos( $action, 'new' ) !== false )
+if( $action == 'view' || strpos( $action, 'edit' ) !== false || strpos( $action, 'new' ) !== false || $action == 'copy' )
 {	// Initialize js to autocomplete usernames in post/comment form
 	init_autocomplete_usernames_js();
 	// Require colorbox js:

@@ -41,10 +41,9 @@ if( ! is_logged_in() )
 	bad_request_die( T_( 'You are not logged in.' ) );
 }
 
-if( $demo_mode && ( $current_User->ID <= 3 ) )
-{
-	bad_request_die( 'Demo mode: you can\'t edit the admin and demo users profile!<br />[<a href="javascript:history.go(-1)">'
-		. T_('Back to profile') . '</a>]' );
+if( $demo_mode && ( $current_User->ID <= 7 ) )
+{	// Demo mode restrictions: users created by install process cannot be edited:
+	header_redirect( get_user_settings_url( $disp, NULL, $blog, '&' ) );
 }
 
 // Check that this action request is not a CSRF hacked request:
@@ -295,35 +294,7 @@ elseif( ! param_errors_detected() )
 		case 'update':
 			if( $user_tab == 'register_finish' )
 			{	// After submitting quick data we should redirect user to page like after registration:
-				$after_registration = $Settings->get( 'after_registration' );
-				if( $after_registration == 'return_to_original' )
-				{	// Return to original page ( where user was before the registration process ):
-					if( empty( $redirect_to ) )
-					{	// redirect_to param was not set
-						if( ! empty( $Blog ) )
-						{
-							$redirect_to = $Blog->gen_blogurl();
-						}
-						else
-						{
-							$redirect_to = $baseurl;
-						}
-					}
-				}
-				elseif( $after_registration == 'specific_slug' )
-				{	// Return to the specific slug which is set in the registration settings form:
-					$SlugCache = get_SlugCache();
-					if( ( $Slug = & $SlugCache->get_by_name( $Settings->get( 'after_registration_slug' ), false, false ) ) &&
-							( $slug_Item = & $Slug->get_object() ) &&
-							( $slug_Item instanceof Item ) )
-					{	// Use permanent URL of the slug Item:
-						$redirect_to = $slug_Item->get_permanent_url( '', '', '&' );
-					}
-				}
-				else
-				{	// Return to the specific URL which is set in the registration settings form:
-					$redirect_to = $after_registration;
-				}
+				$redirect_to = get_redirect_after_registration();
 			}
 			elseif( isset( $current_User->previous_pass_driver ) &&
 			    $current_User->previous_pass_driver == 'nopass' &&

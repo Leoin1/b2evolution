@@ -109,6 +109,7 @@ $core_componentwidget_defs = array(
 			'item_about_author',
 			'item_seen_by',
 			'item_vote',
+			'item_fields_compare',
 		),
 	'collection' => array(
 			'coll_logo',
@@ -124,7 +125,9 @@ $core_componentwidget_defs = array(
 			'user_avatars',
 			'org_members',
 			'user_login',
-			'user_register',
+			'user_greetings',
+			'user_register_quick',
+			'user_register_standard',
 			'newsletter_subscription',
 			'user_tools',
 			'online_users',

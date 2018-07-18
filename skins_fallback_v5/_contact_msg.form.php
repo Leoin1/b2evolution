@@ -117,13 +117,21 @@ $Form->switch_template_parts( $params['skin_form_params'] );
 				'class'     => 'wide_input',
 				'required'  => $Blog->get_setting( 'msgform_require_name' ),
 			) );
-		$Form->text_input( $dummy_fields['email'], $email_author_address, 40, T_('Email'),
-			T_('Your email address. (Will <strong>not</strong> be displayed on this site.)'), array(
+		$Form->email_input( $dummy_fields['email'], $email_author_address, 40, T_('Email'), array(
+				'note'      => T_('Your email address. (Will <strong>not</strong> be displayed on this site.)'),
 				'maxlength' => 150,
 				'class'     => 'wide_input',
 				'required'  => true,
 			) );
 	}
+
+	$Plugins->trigger_event( 'DisplayMessageFormFieldsetAboveMessage', array(
+			'Form'              => & $Form,
+			'recipient_ID'      => & $recipient_id,
+			'item_ID'           => $post_id,
+			'comment_ID'        => $comment_id,
+			'form_use_fieldset' => false,
+		) );
 
 	if( $Blog->get_setting( 'msgform_display_subject' ) )
 	{	// Display a field to enter or select a subject:
@@ -165,8 +173,13 @@ $Form->switch_template_parts( $params['skin_form_params'] );
 			T_('Plain text only.'), 35, 'wide_textarea', $Blog->get_setting( 'msgform_require_message' ) );
 	}
 
-	$Plugins->trigger_event( 'DisplayMessageFormFieldset', array( 'Form' => & $Form,
-		'recipient_ID' => & $recipient_id, 'item_ID' => $post_id, 'comment_ID' => $comment_id ) );
+	$Plugins->trigger_event( 'DisplayMessageFormFieldset', array(
+			'Form'              => & $Form,
+			'recipient_ID'      => & $recipient_id,
+			'item_ID'           => $post_id,
+			'comment_ID'        => $comment_id,
+			'form_use_fieldset' => false,
+		) );
 
 	// Form buttons:
 	echo $Form->begin_field( NULL, '' );

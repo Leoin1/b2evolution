@@ -102,7 +102,7 @@ $Results->cols[] = array(
 $Results->cols[] = array(
 		'th' => T_('IP Range Start'),
 		'td' => /* Check permission: */$current_User->check_perm( 'spamblacklist', 'edit' ) ?
-			/* Current user can edit IP ranges */'<a href="'.$admin_url.'?ctrl=antispam&amp;tab3=ipranges&amp;iprange_ID=$aipr_ID$&amp;action=iprange_edit&amp;filter=new">%int2ip( #aipr_IPv4start# )%</a>' :
+			/* Current user can edit IP ranges */'<a href="'.$admin_url.'?ctrl=antispam'.$tab_param.'&amp;tab3=ipranges&amp;iprange_ID=$aipr_ID$&amp;action=iprange_edit&amp;filter=new">%int2ip( #aipr_IPv4start# )%</a>' :
 			/* No edit, only view the IP address */'%int2ip( #aipr_IPv4start# )%',
 		'order' => 'aipr_IPv4start',
 	);
@@ -110,7 +110,7 @@ $Results->cols[] = array(
 $Results->cols[] = array(
 		'th' => T_('IP Range End'),
 		'td' => /* Check permission: */$current_User->check_perm( 'spamblacklist', 'edit' ) ?
-			/* Current user can edit IP ranges */'<a href="'.$admin_url.'?ctrl=antispam&amp;tab3=ipranges&amp;iprange_ID=$aipr_ID$&amp;action=iprange_edit&amp;filter=new">%int2ip( #aipr_IPv4end# )%</a>' :
+			/* Current user can edit IP ranges */'<a href="'.$admin_url.'?ctrl=antispam'.$tab_param.'&amp;tab3=ipranges&amp;iprange_ID=$aipr_ID$&amp;action=iprange_edit&amp;filter=new">%int2ip( #aipr_IPv4end# )%</a>' :
 			/* No edit, only view the IP address */'%int2ip( #aipr_IPv4end# )%',
 		'order' => 'aipr_IPv4end',
 	);
@@ -175,7 +175,10 @@ if( $current_User->check_perm( 'spamblacklist', 'edit' ) )
 		);
 }
 
-$Results->global_icon( T_('Add a new IP range...'), 'new', regenerate_url( 'action', 'action=iprange_new'), T_('New IP range').' &raquo;', 3, 4, array( 'class' => 'action_icon btn-primary' ) );
+if( $current_User->check_perm( 'spamblacklist', 'edit' ) )
+{	// Check permission to edit IP ranges:
+	$Results->global_icon( T_('Add a new IP range...'), 'new', regenerate_url( 'action', 'action=iprange_new'), T_('New IP range').' &raquo;', 3, 4, array( 'class' => 'action_icon btn-primary' ) );
+}
 
 $Results->display();
 

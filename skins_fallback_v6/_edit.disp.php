@@ -125,7 +125,10 @@ $Form->begin_form( 'inskin', '', $form_params );
 			$Form->hidden( 'item_priority', $edited_Item->priority );
 			$Form->hidden( 'item_assigned_user_ID', $edited_Item->assigned_user_ID );
 			$Form->hidden( 'item_st_ID', $edited_Item->pst_ID );
-			$Form->hidden( 'item_deadline', $edited_Item->datedeadline );
+			if( $Blog->get_setting( 'use_deadline' ) )
+			{	// If deadline is enabled for collection:
+				$Form->hidden( 'item_deadline', $edited_Item->datedeadline );
+			}
 		}
 		$Form->hidden( 'trackback_url', $trackback_url );
 		$Form->hidden( 'item_featured', $edited_Item->featured );
@@ -140,7 +143,7 @@ $Form->begin_form( 'inskin', '', $form_params );
 	}
 	elseif( !isset( $edited_Item->status ) )
 	{
-		$highest_publish_status = get_highest_publish_status( 'post', $Blog->ID, false );
+		$highest_publish_status = get_highest_publish_status( 'post', $Blog->ID, false, '', $edited_Item );
 		$edited_Item->set( 'status', $highest_publish_status );
 	}
 
@@ -215,14 +218,10 @@ $Form->begin_form( 'inskin', '', $form_params );
 	$use_title = $edited_Item->get_type_setting( 'use_title' );
 	if( $use_title != 'never' )
 	{
-		$Form->switch_layout( 'none' );
-		echo '<table width="100%" class="compose_layout"><tr>';
-		$Form->labelstart = '<th width="1%" class="label">';
-		$Form->labelend = '</th>';
-		$Form->inputstart = '<td>';
-		$Form->inputend = '</td>';
+		$Form->switch_layout( 'fields_table' );
+		$Form->begin_fieldset();
 		$Form->text_input( 'post_title', $item_title, 20, T_('Title'), '', array( 'maxlength' => 255, 'style' => 'width: 100%;', 'required' => ( $use_title == 'required' ) ) );
-		echo '</tr></table>';
+		$Form->end_fieldset();
 		$Form->switch_layout( NULL );
 	}
 
@@ -357,16 +356,22 @@ else
 			switch( $custom_field['type'] )
 			{
 				case 'double':
-					$Form->text( 'item_double_'.$custom_field['ID'], $edited_Item->get_setting( 'custom_double_'.$custom_field['ID'] ), 10, $custom_field['label'], $custom_field['note'].' <code>'.$custom_field['name'].'</code>' );
+					$Form->text_input( 'item_double_'.$custom_field['ID'], $edited_Item->get_setting( 'custom:'.$custom_field['name'] ), 12, $custom_field['label'], $custom_field['note'].' <code>'.$custom_field['name'].'</code>', array( 'maxlength' => 10000 ) );
 					break;
 				case 'varchar':
-					$Form->text_input( 'item_varchar_'.$custom_field['ID'], $edited_Item->get_setting( 'custom_varchar_'.$custom_field['ID'] ), 20, $custom_field['label'], '<br />'.$custom_field['note'].' <code>'.$custom_field['name'].'</code>', array( 'maxlength' => 255, 'style' => 'width: 100%;' ) );
+					$Form->text_input( 'item_varchar_'.$custom_field['ID'], $edited_Item->get_setting( 'custom:'.$custom_field['name'] ), 20, $custom_field['label'], '<br />'.$custom_field['note'].' <code>'.$custom_field['name'].'</code>', array( 'maxlength' => 10000, 'style' => 'width:100%' ) );
 					break;
 				case 'text':
-					$Form->textarea_input( 'item_text_'.$custom_field['ID'], $edited_Item->get_setting( 'custom_text_'.$custom_field['ID'] ), 5, $custom_field['label'], array( 'note' => $custom_field['note'].' <code>'.$custom_field['name'].'</code>' ) );
+					$Form->textarea_input( 'item_text_'.$custom_field['ID'], $edited_Item->get_setting( 'custom:'.$custom_field['name'] ), 5, $custom_field['label'], array( 'note' => $custom_field['note'].' <code>'.$custom_field['name'].'</code>' ) );
 					break;
 				case 'html':
-					$Form->textarea_input( 'item_html_'.$custom_field['ID'], $edited_Item->get_setting( 'custom_html_'.$custom_field['ID'] ), 5, $custom_field['label'], array( 'note' => $custom_field['note'].' <code>'.$custom_field['name'].'</code>' ) );
+					$Form->textarea_input( 'item_html_'.$custom_field['ID'], $edited_Item->get_setting( 'custom:'.$custom_field['name'] ), 5, $custom_field['label'], array( 'note' => $custom_field['note'].' <code>'.$custom_field['name'].'</code>' ) );
+					break;
+				case 'url':
+					$Form->text_input( 'item_url_'.$custom_field['ID'], $edited_Item->get_setting( 'custom:'.$custom_field['name'] ), 20, $custom_field['label'], '<br />'.$custom_field['note'].' <code>'.$custom_field['name'].'</code>', array( 'maxlength' => 10000, 'style' => 'width:100%' ) );
+					break;
+				case 'image':
+					$Form->text_input( 'item_image_'.$custom_field['ID'], $edited_Item->get_setting( 'custom:'.$custom_field['name'] ), 12, $custom_field['label'], $custom_field['note'].' <code>'.$custom_field['name'].'</code>', array( 'maxlength' => 10000 ) );
 					break;
 			}
 		}

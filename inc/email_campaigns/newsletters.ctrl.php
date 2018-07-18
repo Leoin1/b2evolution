@@ -30,6 +30,11 @@ param_action();
 
 $tab = param( 'tab', 'string', 'general', true );
 
+if( $tab == 'automations' )
+{	// Check other permission for automations:
+	$current_User->check_perm( 'options', 'view', true );
+}
+
 if( param( 'enlt_ID', 'integer', '', true ) )
 {	// Load Newsletter object:
 	$NewsletterCache = & get_NewsletterCache();
@@ -213,16 +218,26 @@ switch( $action )
 $AdminUI->breadcrumbpath_init( false );
 $AdminUI->breadcrumbpath_add( T_('Emails'), $admin_url.'?ctrl=newsletters' );
 $AdminUI->breadcrumbpath_add( T_('Lists'), $admin_url.'?ctrl=newsletters' );
+
+$AdminUI->display_breadcrumbpath_init( false );
+
 if( ! empty( $edited_Newsletter ) )
 {
+	$AdminUI->display_breadcrumbpath_add( T_('Lists'), $admin_url.'?ctrl=newsletters' );
 	if( $edited_Newsletter->ID > 0 )
 	{	// Edit newsletter
 		$AdminUI->breadcrumbpath_add( $edited_Newsletter->dget( 'name' ), '?ctrl=newsletters&amp;action=edit&amp;enlt_ID='.$edited_Newsletter->ID );
+		$AdminUI->display_breadcrumbpath_add( $edited_Newsletter->dget( 'name' ) );
 	}
 	else
 	{	// New newsletter
 		$AdminUI->breadcrumbpath_add( $edited_Newsletter->dget( 'name' ), '?ctrl=newsletters&amp;action=new' );
+		$AdminUI->display_breadcrumbpath_add( T_('New list') );
 	}
+}
+else
+{
+	$AdminUI->display_breadcrumbpath_add( T_('Lists') );
 }
 
 // Set an url for manual page:
@@ -243,6 +258,14 @@ switch( $action )
 						'text' => T_('Subscribers'),
 						'href' => $admin_url.'?ctrl=newsletters&amp;action=edit&amp;tab=subscribers&amp;enlt_ID='.$edited_Newsletter->ID )
 				) );
+			if( $current_User->check_perm( 'options', 'view' ) )
+			{	// If current user has a permissions to view options:
+				$AdminUI->add_menu_entries( array( 'email', 'newsletters' ), array(
+						'automations' => array(
+							'text' => T_('Automations'),
+							'href' => $admin_url.'?ctrl=newsletters&amp;action=edit&amp;tab=automations&amp;enlt_ID='.$edited_Newsletter->ID ),
+					), 'campaigns' );
+			}
 		}
 
 		switch( $tab )
@@ -252,11 +275,18 @@ switch( $action )
 				$AdminUI->set_path( 'email', 'newsletters', 'campaigns' );
 				break;
 
+			case 'automations':
+				$AdminUI->set_page_manual_link( 'email-list-automations' );
+				$AdminUI->set_path( 'email', 'newsletters', 'automations' );
+				break;
+
 			case 'subscribers':
 				// Initialize date picker for _newsletters_subscribers.view.php
 				init_datepicker_js();
 				// Initialize user tag input
 				init_tokeninput_js();
+				// Load jQuery QueryBuilder plugin files for user list filters:
+				init_querybuilder_js( 'rsc_url' );
 				$AdminUI->set_page_manual_link( 'email-list-subscribers' );
 				$AdminUI->set_path( 'email', 'newsletters', 'subscribers' );
 				break;
@@ -301,6 +331,16 @@ switch( $action )
 		{
 			case 'campaigns':
 				$AdminUI->disp_view( 'email_campaigns/views/_newsletters_campaign.view.php' );
+				break;
+
+			case 'automations':
+				load_funcs( 'automations/model/_automation.funcs.php' );
+				// Display automations tied to this Newsletter:
+				automation_results_block( array(
+						'enlt_ID'               => $edited_Newsletter->ID,
+						'results_title'         => T_('Automations').get_manual_link( 'automations-for-a-list' ),
+						'results_prefix'        => 'enltautm_',
+					) );
 				break;
 
 			case 'subscribers':

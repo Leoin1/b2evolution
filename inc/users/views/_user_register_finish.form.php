@@ -60,7 +60,7 @@ $Form->begin_form( 'bComment' );
 $Form->add_crumb( 'user' );
 $Form->hidden_ctrl();
 $Form->hidden( 'user_tab', 'register_finish' );
-
+$Form->hidden( 'redirect_to', param( 'redirect_to', 'url', NULL ) );
 $Form->hidden( 'user_ID', $edited_User->ID );
 if( isset( $Blog ) )
 {
@@ -120,7 +120,7 @@ $Form->password_input( 'edited_user_pass2', '', 18, '',
 	);
 
 // Email
-$Form->text_input( 'edited_user_email', $edited_User->email, 50, T_('Email'), '<br />'.T_('We respect your privacy. Your email will remain strictly confidential.'),
+$Form->email_input( 'edited_user_email', $edited_User->email, 50, T_('Email'), array( 'note' => '<br />'.T_('We respect your privacy. Your email will remain strictly confidential.') ),
 	array(
 			'placeholder' => T_('Email address'),
 			'maxlength'   => 255,

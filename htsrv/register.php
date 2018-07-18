@@ -51,6 +51,7 @@ $registration_ask_locale = $Settings->get('registration_ask_locale');
 // Check what subscriptions should be activated (It can be used for quick registration by widget)
 $auto_subscribe_posts = false;
 $auto_subscribe_comments = false;
+$auto_subscribe_posts_mod = false;
 
 $login = param( $dummy_fields[ 'login' ], 'string', '' );
 $email = utf8_strtolower( param( $dummy_fields[ 'email' ], 'string', '' ) );
@@ -82,16 +83,16 @@ if( $inskin && !empty( $Blog ) )
 }
 
 // Check invitation code if it exists and registration is enabled
-$display_invitation = check_invitation_code();
+$invitation_code_status = check_invitation_code();
 
-if( $display_invitation == 'deny' )
-{ // Registration is disabled
+if( $invitation_code_status == 'deny' )
+{	// Registration is disabled or system is locked:
 	$action = 'disabled';
 }
 
 if( $register_user = $Session->get('core.register_user') )
 {	// Get an user data from predefined session (after adding of a comment)
-	$login = preg_replace( '/[^a-z0-9 ]/i', '', $register_user['name'] );
+	$login = preg_replace( '/[^a-z0-9_\-\. ]/i', '', $register_user['name'] );
 	$login = str_replace( ' ', '_', $login );
 	$login = utf8_substr( $login, 0, 20 );
 	$email = $register_user['email'];
@@ -103,18 +104,26 @@ switch( $action )
 {
 	case 'register':
 	case 'quick_register':
+		// Use this boolean var to know when quick registration is used
+		$is_quick = ( $action == 'quick_register' );
+		$is_inline = param( 'inline', 'integer', 0 ) == 1;
+
 		// Stop a request from the blocked IP addresses or Domains
 		antispam_block_request();
+
+		// Check email:
+		param_check_new_user_email( $dummy_fields['email'], $email );
+
+		if( $is_quick || $is_inline )
+		{	// We will need the following parameter for the session data that will be set later:
+			param( 'widget', 'integer', 0 );
+		}
 
 		// Stop a request from the blocked email address or its domain:
 		antispam_block_by_email( $email );
 
 		// Check that this action request is not a CSRF hacked request:
 		$Session->assert_received_crumb( 'regform' );
-
-		// Use this boolean var to know when quick registration is used
-		$is_quick = ( $action == 'quick_register' );
-		$is_inline = param( 'inline', 'integer', 0 ) == 1;
 
 		if( $is_quick || $is_inline )
 		{ // Check if we can use a quick registration now:
@@ -124,8 +133,6 @@ switch( $action )
 				break;
 			}
 
-			param( 'widget', 'integer', 0 );
-
 			if( empty( $Blog ) || ( empty( $widget ) && ! $is_inline ) )
 			{ // Don't use a quick registration if the request goes from not blog page
 				debug_die( 'Quick registration is currently disabled on this system.' );
@@ -133,13 +140,14 @@ switch( $action )
 			}
 
 			if( empty( $widget ) && $is_inline )
-			{ // Request from shorttag
+			{	// Set params for a request from inline tag "[emailcapture:]" :
 				$source = param( 'source', 'string', true );
 				$ask_firstname = param( 'ask_firstname', 'string', true );
 				$ask_lastname = param( 'ask_lastname', 'string', true );
 				$user_tags = param( 'usertags', 'string', NULL );
 				$subscribe_posts = param( 'subscribe_post', 'integer', true );
 				$subscribe_comments = param( 'subscribe_comment', 'integer', true );
+				$subscribe_posts_mod = param( 'subscribe_post_mod', 'integer', true );
 				$newsletters = param( 'newsletters', 'string', true );
 				$newsletters = explode( ',', $newsletters );
 				$widget_newsletters = array();
@@ -150,37 +158,30 @@ switch( $action )
 				$widget_redirect_to = param( 'redirect_to', 'string', true );
 			}
 			else
-			{
+			{	// Set params for a request from widget quick registration:
 				$WidgetCache = & get_WidgetCache();
-				$user_register_Widget = & $WidgetCache->get_by_ID( $widget, false, false );
-				if( ! $user_register_Widget ||
-						$user_register_Widget->code != 'user_register' ||
-						$user_register_Widget->get( 'coll_ID' ) != $Blog->ID )
+				$user_register_quick_Widget = & $WidgetCache->get_by_ID( $widget, false, false );
+				if( ! $user_register_quick_Widget ||
+						$user_register_quick_Widget->code != 'user_register_quick' ||
+						$user_register_quick_Widget->get( 'coll_ID' ) != $Blog->ID )
 				{ // Wrong or hacked request!
 					debug_die( 'Quick registration is currently disabled on this system.' );
 					break;
 				}
 
 				// Initialize the widget settings
-				$user_register_Widget->init_display( array() );
+				$user_register_quick_Widget->init_display( array() );
 
 				// Get a source from widget setting
-				$source = $user_register_Widget->disp_params['source'];
-				$ask_firstname = $user_register_Widget->disp_params['ask_firstname'];
-				$ask_lastname = $user_register_Widget->disp_params['ask_lastname'];
-				$subscribe_posts = $user_register_Widget->disp_params['subscribe_post'];
-				$subscribe_comments = $user_register_Widget->disp_params['subscribe_comment'];
-				$widget_newsletters = $user_register_Widget->disp_params['newsletters'];
-				$user_tags = $user_register_Widget->disp_params['usertags'];
-				$widget_redirect_to = trim( $user_register_Widget->disp_params['redirect_to'] );
-			}
-
-			if( $DB->get_var( 'SELECT user_ID FROM T_users WHERE user_email = '.$DB->quote( utf8_strtolower( $email ) ) ) )
-			{ // Don't allow the duplicate emails
-				$Messages->add( sprintf( T_('You already registered on this site. You can <a %s>log in here</a>. If you don\'t know or have forgotten it, you can <a %s>set your password here</a>.'),
-					'href="'.$Blog->get( 'loginurl' ).'"',
-					'href="'.$Blog->get( 'lostpasswordurl' ).'"' ), 'warning' );
-				break;
+				$source = $user_register_quick_Widget->disp_params['source'];
+				$ask_firstname = $user_register_quick_Widget->disp_params['ask_firstname'];
+				$ask_lastname = $user_register_quick_Widget->disp_params['ask_lastname'];
+				$subscribe_posts = $user_register_quick_Widget->disp_params['subscribe_post'];
+				$subscribe_comments = $user_register_quick_Widget->disp_params['subscribe_comment'];
+				$subscribe_posts_mod = $user_register_quick_Widget->disp_params['subscribe_post_mod'];
+				$widget_newsletters = $user_register_quick_Widget->disp_params['newsletters'];
+				$user_tags = $user_register_quick_Widget->disp_params['usertags'];
+				$widget_redirect_to = trim( $user_register_quick_Widget->disp_params['redirect_to'] );
 			}
 
 			// Check what fields should be required by current widget
@@ -190,8 +191,9 @@ switch( $action )
 			$registration_require_lastname = ( $ask_lastname == 'required' );
 
 			// Check what subscriptions should be activated by current widget
-			$auto_subscribe_posts = ! empty( $subscribe_posts  );
+			$auto_subscribe_posts = ! empty( $subscribe_posts );
 			$auto_subscribe_comments = ! empty( $subscribe_comments );
+			$auto_subscribe_posts_mod = ! empty( $subscribe_posts_mod );
 		}
 
 		if( ! $is_quick )
@@ -217,11 +219,6 @@ switch( $action )
 					'pass1'     => & $pass1,
 					'pass2'     => & $pass2,
 				) );
-		}
-
-		if( $Messages->has_errors() )
-		{ // a Plugin has added an error
-			break;
 		}
 
 		// Set params:
@@ -269,31 +266,42 @@ switch( $action )
 
 		if( $is_quick && ! $Messages->has_errors() )
 		{	// Generate a login for quick registration:
-			// Get the login from email address:
-			$login = preg_replace( '/^([^@]+)@(.+)$/', '$1', utf8_strtolower( $email ) );
-			$login = preg_replace( '/[\'"><@\s]/', '', $login );
-			if( $Settings->get( 'strict_logins' ) )
-			{ // We allow only the plain ACSII characters, digits, the chars _ and .
-				$login = preg_replace( '/[^A-Za-z0-9_.]/', '', $login );
+
+			if( ! empty( $firstname ) || ! empty( $lastname ) )
+			{ // Firstname or lastname given, let's use these:
+				$login = array();
+				if( ! empty( $firstname ) )
+				{
+					$login[] = trim( $firstname );
+				}
+				if( ! empty( $lastname ) )
+				{
+					$login[] = trim( $lastname );
+				}
+				$login = preg_replace( '/[\s]+/', '_', utf8_strtolower( implode( '.', $login ) ) );
+				$login = generate_login_from_string( $login );
 			}
 			else
-			{ // We allow any character that is not explicitly forbidden in Step 1
-				// Enforce additional limitations
-				$login = preg_replace( '|%([a-fA-F0-9][a-fA-F0-9])|', '', $login ); // Kill octets
-				$login = preg_replace( '/&.+?;/', '', $login ); // Kill entities
-			}
-			$login = preg_replace( '/^usr_/i', '', $login );
+			{ // Get the login from email address:
+				$login = preg_replace( '/^([^@]+)@(.+)$/', '$1', utf8_strtolower( $email ) );
+				$login = preg_replace( '/[\'"><@\s]/', '', $login );
 
-			// Check and search free login name if current is busy
-			$login_name = $login;
-			$login_number = 1;
-			$UserCache = & get_UserCache();
-			while( empty( $login_name ) || $UserCache->get_by_login( $login_name ) )
-			{
-				$login_name = $login.$login_number;
-				$login_number++;
+				if( strpos( $login, '.' ) )
+				{ // Get only the part before the "." if it has one
+					$temp_login = $login;
+					$login = substr( $login, 0, strpos( $login, '.' ) );
+					$login = generate_login_from_string( $login );
+
+					if( empty( $login ) )
+					{ // Resulting login empty, use full email address
+						$login = generate_login_from_string( $temp_login );
+					}
+				}
+				else
+				{
+					$login = generate_login_from_string( $login );
+				}
 			}
-			$login = $login_name;
 		}
 
 		if( ! $is_quick )
@@ -423,6 +431,7 @@ switch( $action )
 		$initial_hit = $Session->get_first_hit_params();
 		if( ! empty ( $initial_hit ) )
 		{	// Save User Settings
+			$UserSettings->set( 'initial_sess_ID' , $initial_hit->hit_sess_ID, $new_User->ID );
 			$UserSettings->set( 'initial_blog_ID' , $initial_hit->hit_coll_ID, $new_User->ID );
 			$UserSettings->set( 'initial_URI' , $initial_hit->hit_uri, $new_User->ID );
 			$UserSettings->set( 'initial_referer' , $initial_hit->hit_referer , $new_User->ID );
@@ -438,10 +447,10 @@ switch( $action )
 		$UserSettings->dbupdate();
 
 		// Auto subscribe new user to current collection posts/comments:
-		if( $auto_subscribe_posts || $auto_subscribe_comments )
+		if( $auto_subscribe_posts || $auto_subscribe_comments || $auto_subscribe_posts_mod )
 		{ // If at least one option is enabled
-			$DB->query( 'REPLACE INTO T_subscriptions ( sub_coll_ID, sub_user_ID, sub_items, sub_comments )
-					VALUES ( '.$DB->quote( $Blog->ID ).', '.$DB->quote( $new_User->ID ).', '.$DB->quote( intval( $auto_subscribe_posts ) ).', '.$DB->quote( intval( $auto_subscribe_comments ) ).' )' );
+			$DB->query( 'REPLACE INTO T_subscriptions ( sub_coll_ID, sub_user_ID, sub_items, sub_items_mod, sub_comments )
+					VALUES ( '.$DB->quote( $Blog->ID ).', '.$DB->quote( $new_User->ID ).', '.$DB->quote( intval( $auto_subscribe_posts ) ).', '.$DB->quote( intval( $auto_subscribe_posts_mod ) ).', '.$DB->quote( intval( $auto_subscribe_comments ) ).' )' );
 		}
 
 		// Get user domain status:
@@ -456,6 +465,7 @@ switch( $action )
 				'country'     => $new_User->get( 'ctry_ID' ),
 				'reg_country' => $new_User->get( 'reg_ctry_ID' ),
 				'reg_domain'  => $user_domain.' ('.$dom_status.')',
+				'user_domain' => $user_domain,
 				'firstname'   => $firstname,
 				'lastname'    => $lastname,
 				'fullname'    => $new_User->get( 'fullname' ),
@@ -506,9 +516,8 @@ switch( $action )
 		// extra confusion when account validation is required.
 		$Session->set_User( $new_User );
 
-		// Set redirect_to from current widget:
-		if( isset( $user_register_Widget ) )
-		{	// If widget is defined:
+		if( $is_quick )
+		{	// Set redirect_to after quick registration from widget or inline tag "[emailcapture:]":
 			if( ! empty( $widget_redirect_to ) )
 			{	// If a redirect param is defined:
 				if( preg_match( '#^(https?://|/)#i', $widget_redirect_to ) )
@@ -523,45 +532,26 @@ switch( $action )
 						$widget_redirect_to_url = $widget_redirect_Item->get_permanent_url( '', '', '&' );
 					}
 				}
+			}
 
-				if( isset( $widget_redirect_to_url ) )
-				{	// Redirect to URL from widget config:
-					header_redirect( $widget_redirect_to_url );
-					// Exit here.
-				}
+			if( $Settings->get( 'registration_after_quick' ) == 'regform' )
+			{	// If we should display additional registration screen after quick registration:
+				$Messages->add( T_('Please double check your email address and choose a password so that you can log in next time you visit us.'), 'warning' );
+				$widget_redirect_to_url = $Blog->get( 'register_finishurl', array(
+						'glue'       => '&',
+						'url_suffix' => 'redirect_to='.rawurlencode( empty( $widget_redirect_to_url ) ? get_returnto_url() : $widget_redirect_to_url ),
+					) );
+			}
+
+			if( isset( $widget_redirect_to_url ) )
+			{	// Redirect to URL from widget config:
+				header_redirect( $widget_redirect_to_url );
+				// Exit here.
 			}
 		}
 
-		// Set redirect_to pending from after_registration setting
-		$after_registration = $Settings->get( 'after_registration' );
-		if( $after_registration == 'return_to_original' )
-		{ // Return to original page ( where user was before the registration process )
-			if( empty( $redirect_to ) )
-			{ // redirect_to param was not set
-				if( $inskin && !empty( $Blog ) )
-				{
-					$redirect_to = $Blog->gen_blogurl();
-				}
-				else
-				{
-					$redirect_to = $baseurl;
-				}
-			}
-		}
-		elseif( $after_registration == 'specific_slug' )
-		{	// Return to the specific slug which is set in the registration settings form:
-			$SlugCache = get_SlugCache();
-			if( ( $Slug = & $SlugCache->get_by_name( $Settings->get( 'after_registration_slug' ), false, false ) ) &&
-			    ( $slug_Item = & $Slug->get_object() ) &&
-			    ( $slug_Item instanceof Item ) )
-			{	// Use permanent URL of the slug Item:
-				$redirect_to = $slug_Item->get_permanent_url( '', '', '&' );
-			}
-		}
-		else
-		{ // Return to the specific URL which is set in the registration settings form
-			$redirect_to = $after_registration;
-		}
+		// Set redirect_to pending from after_registration setting:
+		$redirect_to = get_redirect_after_registration( $inskin );
 
 		header_redirect( $redirect_to );
 		break;

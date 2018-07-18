@@ -21,7 +21,7 @@ global $edited_User, $UserSettings, $Settings, $Plugins;
 
 global $current_User;
 
-global $servertimenow, $admin_url, $user_tags;
+global $servertimenow, $admin_url, $action;
 
 if( !$current_User->can_moderate_user( $edited_User->ID ) )
 { // Check permission:
@@ -43,7 +43,7 @@ $Form = new Form( NULL, 'user_checkchanges' );
 
 $Form->title_fmt = '<div class="row"><span class="col-xs-12 col-lg-6 col-lg-push-6 text-right">$global_icons$</span><div class="col-xs-12 col-lg-6 col-lg-pull-6">$title$</div></div>'."\n";
 
-echo_user_actions( $Form, $edited_User, 'edit' );
+echo_user_actions( $Form, $edited_User, $action );
 
 $form_text_title = T_( 'User admin settings' ); // used for js confirmation message on leave the changed form
 $form_title = get_usertab_header( $edited_User, 'admin', '<span class="nowrap">'.T_( 'User admin settings' ).'</span>'.get_manual_link( 'user-admin-tab' ) );
@@ -139,63 +139,11 @@ else
 
 $Form->end_fieldset(); // user permissions
 
-$Form->begin_fieldset( T_('Tags').get_manual_link('user-admin-tags') );
-
-	$Form->text_input( 'edited_user_tags', param( 'edited_user_tags', 'string', $user_tags ), 40, T_('Tags'), '', array(
-		'maxlength' => 255,
-		'style'     => 'width: 100%;',
-		'input_prefix' => '<div id="user_admin_tags" class="input-group">',
-		'input_suffix' => '</div>',
-	) );
-	?>
-	<script type="text/javascript">
-	function init_autocomplete_tags( selector )
-	{
-		var tags = jQuery( selector ).val();
-		var tags_json = new Array();
-		if( tags.length > 0 )
-		{ // Get tags from <input>
-			tags = tags.split( ',' );
-			for( var t in tags )
-			{
-				tags_json.push( { id: tags[t], name: tags[t] } );
-			}
-		}
-
-		jQuery( selector ).tokenInput( '<?php echo get_restapi_url().'usertags' ?>',
-		{
-			theme: 'facebook',
-			queryParam: 's',
-			propertyToSearch: 'name',
-			tokenValue: 'name',
-			preventDuplicates: true,
-			prePopulate: tags_json,
-			hintText: '<?php echo TS_('Type in a tag') ?>',
-			noResultsText: '<?php echo TS_('No results') ?>',
-			searchingText: '<?php echo TS_('Searching...') ?>',
-			jsonContainer: 'tags',
-		} );
-	}
-
-	jQuery( document ).ready( function()
-	{
-		jQuery( '#edited_user_tags' ).hide();
-		init_autocomplete_tags( '#edited_user_tags' );
-		<?php
-			// Don't submit a form by Enter when user is editing the tags
-			echo get_prevent_key_enter_js( '#token-input-edited_user_tags' );
-		?>
-	} );
-	</script>
-	<?php
-
-$Form->end_fieldset(); // user tags
-
 $Form->begin_fieldset( T_('Email').get_manual_link('user-admin-email') );
 
 	$Form->begin_line( T_('Email') );
 		$email_fieldnote = '<a href="mailto:'.$edited_User->get( 'email' ).'" class="'.button_class().'">'.get_icon( 'email', 'imgtag', array('title'=>T_('Send an email')) ).'</a>';
-		$Form->text_input( 'edited_user_email', $edited_User->get( 'email' ), 30, '', $email_fieldnote, array( 'maxlength' => 255, 'required' => true ) );
+		$Form->email_input( 'edited_user_email', $edited_User->get( 'email' ), 30, '', array( 'maxlength' => 255, 'required' => true, 'note' => $email_fieldnote ) );
 
 		$email_status = $edited_User->get_email_status();
 		$email_status_icon = '<div id="email_status_icon" class="status_icon">'.emadr_get_status_icon( $email_status ).'</div>';
@@ -226,7 +174,7 @@ $Form->begin_fieldset( T_('Email').get_manual_link('user-admin-email') );
 	{
 		$notifcation_sender_email_note = get_icon( 'warning_yellow' ).' '.T_('This is different from the new sender address which is currently:').' '.$default_notification_sender_email;
 	}
-	$Form->text_input( 'notification_sender_email', $notifcation_sender_email, 50, T_( 'Sender email address' ), $notifcation_sender_email_note );
+	$Form->email_input( 'notification_sender_email', $notifcation_sender_email, 50, T_( 'Sender email address' ), array( 'note' => $notifcation_sender_email_note ) );
 
 	// Display notification sender name setting
 	$default_notification_sender_name = $Settings->get( 'notification_sender_name' );
@@ -326,8 +274,11 @@ $Form->begin_fieldset( T_('Usage info').get_manual_link('user-admin-usage') );
 		if( $posts_created > 0 )
 		{
 			$posts_created .= ' - <a href="'.$activity_tab_url.'#created_posts_result" class="'.button_class().' middle" title="'.format_to_output( T_('Go to user activity'), 'htmlattr' ).'">'.get_icon( 'magnifier', 'imgtag', array( 'title' => T_('Go to user activity') ) ).'</a>';
-			$posts_created .= ' - '.action_icon( T_('Delete All').'...', 'delete', $admin_url.'?ctrl=user&amp;user_tab=deldata&amp;user_ID='.$edited_User->ID, ' '.T_('Delete All').'...', 3, 4, array( 'onclick' => 'return user_deldata( '.$edited_User->ID.', \''.get_param( 'user_tab' ).'\')' ) );
-			$posts_created .= get_manual_link( 'delete-user-data' );
+			if( $action != 'view' )
+			{	// If current user can edit this user:
+				$posts_created .= ' - '.action_icon( T_('Delete All').'...', 'delete', $admin_url.'?ctrl=user&amp;user_tab=deldata&amp;user_ID='.$edited_User->ID, ' '.T_('Delete All').'...', 3, 4, array( 'onclick' => 'return user_deldata( '.$edited_User->ID.', \''.get_param( 'user_tab' ).'\')' ) );
+				$posts_created .= get_manual_link( 'delete-user-data' );
+			}
 		}
 		$Form->info_field( '', $posts_created );
 		if( $posts_edited > 0 )
@@ -345,8 +296,11 @@ $Form->begin_fieldset( T_('Usage info').get_manual_link('user-admin-usage') );
 	if( $comments_created > 0 )
 	{
 		$comments_created .= ' - <a href="'.$activity_tab_url.'#comments_result" class="'.button_class().' middle" title="'.format_to_output( T_('Go to user activity'), 'htmlattr' ).'">'.get_icon( 'magnifier', 'imgtag', array( 'title' => T_('Go to user activity') ) ).'</a>';
-		$comments_created .= ' - '.action_icon( T_('Delete All').'...', 'delete', $admin_url.'?ctrl=user&amp;user_tab=deldata&amp;user_ID='.$edited_User->ID, ' '.T_('Delete All').'...', 3, 4, array( 'onclick' => 'return user_deldata( '.$edited_User->ID.', \''.get_param( 'user_tab' ).'\')' ) );
-		$comments_created .= get_manual_link( 'delete-user-data' );
+		if( $action != 'view' )
+		{	// If current user can edit this user:
+			$comments_created .= ' - '.action_icon( T_('Delete All').'...', 'delete', $admin_url.'?ctrl=user&amp;user_tab=deldata&amp;user_ID='.$edited_User->ID, ' '.T_('Delete All').'...', 3, 4, array( 'onclick' => 'return user_deldata( '.$edited_User->ID.', \''.get_param( 'user_tab' ).'\')' ) );
+			$comments_created .= get_manual_link( 'delete-user-data' );
+		}
 	}
 	$Form->info_field( T_('Comments'), $comments_created, array( 'class' => $comments_created_num > 0 ? 'info_full_height' : '' ) );
 
@@ -365,8 +319,11 @@ $Form->begin_fieldset( T_('Usage info').get_manual_link('user-admin-usage') );
 			{
 				$messages_sent .= ' - <a href="'.$admin_url.'?ctrl=abuse&amp;colselect_submit=Filter+list&amp;u='.$edited_User->login.'">'.T_('Go to abuse management').' &raquo;</a>';
 			}
-			$messages_sent .= ' - '.action_icon( T_('Delete All').'...', 'delete', $admin_url.'?ctrl=user&amp;user_tab=deldata&amp;user_ID='.$edited_User->ID, ' '.T_('Delete All').'...', 3, 4, array( 'onclick' => 'return user_deldata( '.$edited_User->ID.', \''.get_param( 'user_tab' ).'\')' ) );
-			$messages_sent .= get_manual_link( 'delete-user-data' );
+			if( $action != 'view' )
+			{	// If current user can edit this user:
+				$messages_sent .= ' - '.action_icon( T_('Delete All').'...', 'delete', $admin_url.'?ctrl=user&amp;user_tab=deldata&amp;user_ID='.$edited_User->ID, ' '.T_('Delete All').'...', 3, 4, array( 'onclick' => 'return user_deldata( '.$edited_User->ID.', \''.get_param( 'user_tab' ).'\')' ) );
+				$messages_sent .= get_manual_link( 'delete-user-data' );
+			}
 		}
 		$Form->info_field( '', $messages_sent );
 		if( $messages_received > 0 && $current_User->check_perm( 'perm_messaging', 'abuse' ) )
@@ -427,7 +384,7 @@ $Form->begin_fieldset( T_('Registration info').get_manual_link('user-admin-regis
 	$Form->begin_line( T_('Account registered on'), NULL, 'info' );
 		$Form->info_field( '', mysql2localedatetime( $edited_User->dget('datecreated') ), array( 'note' => '('.date_ago( strtotime( $edited_User->get( 'datecreated' ) ) ).')') );
 		$Form->info_field( '<b class="evo_label_inline">'.T_('From IP').': </b>',
-			$user_ip_address.( empty( $user_ip_address ) ? '' : ' <a href="" class="btn btn-default" onclick="return get_whois_info(\''.$user_ip_address.'\');">'.get_icon( 'magnifier' ).'</a>' ) );
+			$user_ip_address.( empty( $user_ip_address ) ? '' : ' <a href="'.$admin_url.'?ctrl=antispam&amp;action=whois&amp;query='.$user_ip_address.'" class="btn btn-info middle" onclick="return get_whois_info(\''.$user_ip_address.'\');">'.get_icon( 'magnifier' ).'</a>' ) );
 	$Form->end_line( NULL, 'info' );
 
 	if( $current_User->check_perm( 'spamblacklist', 'view' ) )
@@ -438,7 +395,7 @@ $Form->begin_fieldset( T_('Registration info').get_manual_link('user-admin-regis
 		{ // IP range exists in DB
 			$iprange_status = $IPRange->get( 'status' );
 			$iprange_name = $IPRange->get_name();
-			if( $current_User->check_perm( 'options', 'view' ) && $current_User->check_perm( 'spamblacklist', 'view' ) )
+			if( $current_User->check_perm( 'spamblacklist', 'view' ) )
 			{	// Display IP range as link to edit form if current user has the permissions:
 				$iprange_name = '<a href="'.$admin_url.'?ctrl=antispam&amp;tab3=ipranges&amp;action=iprange_edit&amp;iprange_ID='.$IPRange->ID.'">'.$iprange_name.'</a>';
 			}
@@ -542,9 +499,10 @@ $Form->begin_fieldset( T_('Registration info').get_manual_link('user-admin-regis
 
 $Form->end_fieldset(); // Registration info
 
-$action_buttons = array( array( '', 'actionArray[update]', T_('Save Changes!'), 'SaveButton' ) );
-
-$Form->buttons( $action_buttons );
+if( $action != 'view' )
+{	// If current user can edit this user:
+	$Form->buttons( array( array( '', 'actionArray[update]', T_('Save Changes!'), 'SaveButton' ) ) );
+}
 
 $Form->end_form();
 

@@ -168,7 +168,7 @@ class maintenance_Module extends Module
 			return;
 		}
 
-		if( $current_User->check_perm( 'perm_maintenance', 'backup' ) )
+		if( $current_User->check_perm( 'maintenance', 'backup' ) )
 		{
 			// Display Backup tab in System -> Maintenance menu
 			$AdminUI->add_menu_entries( array( 'options', 'misc' ), array(
@@ -178,7 +178,7 @@ class maintenance_Module extends Module
 							) );
 		}
 
-		if( $current_User->check_perm( 'perm_maintenance', 'upgrade' ) )
+		if( $current_User->check_perm( 'maintenance', 'upgrade' ) )
 		{
 			// Display Updates tab in System -> Maintenance menu
 			$AdminUI->add_menu_entries( array( 'options', 'misc' ), array(
@@ -187,9 +187,9 @@ class maintenance_Module extends Module
 									'href' => '?ctrl=upgrade' ),
 							) );
 			$AdminUI->add_menu_entries( array( 'options', 'misc' ), array(
-									'upgradesvn' => array(
-									'text' => T_('Upgrade from SVN'),
-									'href' => '?ctrl=upgrade&amp;tab=svn' ),
+									'upgradegit' => array(
+									'text' => T_('Upgrade from Git'),
+									'href' => '?ctrl=upgrade&amp;tab=git' ),
 							) );
 		}
 	}
@@ -219,6 +219,12 @@ class maintenance_Module extends Module
 				'name'   => T_('Clean up scheduled jobs older than a threshold'),
 				'help'   => '#',
 				'ctrl'   => 'cron/jobs/_cleanup_jobs.job.php',
+				'params' => NULL,
+			),
+			'cleanup-email-logs' => array(
+				'name'   => T_('Clean up email logs older than a threshold'),
+				'help'   => '#',
+				'ctrl'   => 'cron/jobs/_cleanup_email_logs.job.php',
 				'params' => NULL,
 			),
 			'heavy-db-maintenance' => array(
