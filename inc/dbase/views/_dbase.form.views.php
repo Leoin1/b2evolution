@@ -579,57 +579,62 @@ function form_country_list( &$Form, $field_name, $field_label, $value = NULL, $r
  */
 function form_table_list( &$Form, $field_name, $field_label, $value = NULL, $required = true )
 {
-	global $DB, $tableprefix;
+	global $DB, $tableprefix, $db_config, $db_table_prefix, $db_data_table_suffix;
 
 	$tables_list = array();
-	foreach( $DB->get_results( 'SHOW TABLES' ) as $table )
+
+	$sql = 'SELECT * FROM T_dbase__table';
+	foreach( $DB->get_results( $sql ) AS $row )
 	{
-		$fk_table = NULL;
+		$fk_table  = NULL;
 		$fk_prefix = NULL;
-		$fk_pri = NULL;
-		$fk_name = NULL;
+		$fk_pri    = NULL;
+		$fk_name   = NULL;
 
-		foreach( $table as $table_name )
+		$table = $row->dbt_table;
+		$table_name = $db_table_prefix.$table.$db_data_table_suffix;
+
+		$fk_table = $table_name;
+
+		foreach( $DB->get_results( 'SHOW COLUMNS FROM '.$table_name ) AS $column )
 		{
-			$fk_table = $table_name;
+			//pre_dump( $column );
+			if( empty( $fk_prefix ) )
+			{ // Get prefix
+				$position = strrpos( $column->Field, '_' );
+				if( ! empty( $position ) )
+				{
+					$fk_prefix = substr( $column->Field, 0, $position ).'_';
+				}
+			}
 
-			foreach ( $DB->get_results( 'SHOW COLUMNS FROM '.$table_name ) as $column )
+			if( ! empty( $fk_prefix ) )
 			{
-				if( empty( $fk_prefix ) )
-				{	// Get prefix
-					$position = strrpos( $column->Field, '_' );
-					if( !empty( $position ) )
+				$name = substr( $column->Field, strlen( $fk_prefix ) );
+
+				if( $column->Key == 'PRI' )
+				{ // Check PK
+					preg_match( '/^(?<type>\w*)\({0,1}(?<length>\d*)\){0,1}\s{0,1}(?<unsigned>\w*)$/i', $column->Type, $match );
+
+					if( array_key_exists('type', $match)
+							&& array_key_exists('unsigned', $match)
+							&& $match['type'] == 'int'
+							&& $match['unsigned'] == 'unsigned' )
 					{
-						$fk_prefix = substr( $column->Field, 0, $position ).'_';
+						$fk_pri = $name;
 					}
 				}
-
-				if( !empty( $fk_prefix ) )
-				{
-					$name = substr( $column->Field, strlen( $fk_prefix ) );
-
-					if( $column->Key == 'PRI' )
-					{ 	// check PK
-						preg_match( '/^(?<type>\w*)\({0,1}(?<length>\d*)\){0,1}\s{0,1}(?<unsigned>\w*)$/i', $column->Type, $match );
-
-						if( array_key_exists('type', $match) && array_key_exists('unsigned', $match)
-								&& $match['type'] == 'int' && $match['unsigned'] == 'unsigned' )
-						{
-							$fk_pri = $name;
-						}
-					}
-					elseif( strtolower( $name ) == 'name' )
-					{	// Table has name field
-						$fk_name = $name;
-					}
+				elseif( strtolower( $name ) == 'name' )
+				{	// Table has name field
+					$fk_name = $name;
 				}
 			}
 		}
 
-		if( !empty( $fk_table ) && !empty( $fk_prefix ) && !empty( $fk_pri ) && !empty( $fk_name ) )
+		if( ! empty( $fk_table ) && ! empty( $fk_prefix ) && ! empty( $fk_pri ) && ! empty( $fk_name ) )
 		{	// Can add this table to FK tables list
 			$fk_table = 'T_'.substr( $fk_table, strlen( $tableprefix ) );
-			$tables_list[$fk_table.'|'.$fk_prefix.'|'.$fk_pri.'|'.$fk_name] = $fk_table;
+			$tables_list[$fk_table.'|'.$fk_prefix.'|'.$fk_pri.'|'.$fk_name] = $row->dbt_name;
 		}
 	}
 
