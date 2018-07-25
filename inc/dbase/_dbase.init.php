@@ -54,7 +54,7 @@ class dbase_Module extends Module
 		// Construct prefix and suffix for data and meta tables
 
 		$db_table_prefix = $tableprefix.'dbase__';
-		$db_data_table_suffix = '';
+		$db_data_table_suffix = '__data';
 		$db_meta_table_suffix = '__meta';
 
 		load_class( 'dbase/model/_table.class.php', 'DbTable' );
